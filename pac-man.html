@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<style>
+	
+		</style>
+	</head>
+</html>
+
+<body>
+	<div class="gameArea">
+		<canvas id="game" width="448" height="496" style="border: 2px solid black"></canvas>
+	</div>
+	<button onclick="startGame()">Start</button>
+	<button onclick="setFrameRate('pause')">Pause</button>
+</body>
+
+<script>
+	
+	//SET DIRECTION CONSTANTS
+	const UP = 0;
+	const RIGHT = 1;
+	const DOWN = 2;
+	const LEFT = 3;
+	
+	//CANVAS
+	let canvas = document.getElementById('game');
+	let plane = canvas.getContext("2d");
+	//GAME VARIABLES
+	let state = 'play';
+	var pixelSize = 20;
+	var width = canvas.width / pixelSize;
+	var height = canvas.height / pixelSize;
+	var score = 0;
+	var direction = RIGHT;
+	var existingDirection = RIGHT;
+	var walls = [];
+	
+	var pacman = {
+		x: 20,
+		y: 20,
+		phase: 0,
+		facing: direction,
+	};
+	
+
+	
+	//3.141592653589793
+	//4.71238898038469 
+	//6.283185307179586
+	
+	
+	//ADD KEY EVENT LISTENERS
+	//issue here where you can press two keys in between frames, still allowing the snake to travel back over itself because you can
+	//be travelling up and then press left and then down before the next frame
+	document.addEventListener("keydown", changeDirection);
+	function changeDirection(e){
+		switch(e.code){
+			case 'KeyW':
+			case 'ArrowUp':
+				direction = UP;
+			break;
+			case 'KeyD':
+			case 'ArrowRight':
+				direction = RIGHT;
+			break;
+			case 'KeyS':
+			case 'ArrowDown':
+				direction = DOWN;
+			break;
+			case 'KeyA':
+			case 'ArrowLeft':
+				direction = LEFT;
+			break;
+		}
+		//console.log('current direction is ' + direction);
+	}
+	
+
+	//--
+	
+	//DRAW FUNCTION
+	function draw(){
+		
+		console.log('drawn');
+		
+		//CLEAR PREVIOUS
+		plane.clearRect(0,0,canvas.width,canvas.height);
+		
+		//DRAW THE WALLS
+		for(w = 0; w < walls.length; w++){
+			//console.log(walls[w]);
+			//DRAW RECTANGLE
+			plane.beginPath();
+			plane.rect(walls[w][0] * pixelSize, walls[w][1] * pixelSize, pixelSize, pixelSize);
+			plane.fillStyle = '#000';
+			plane.fill();
+		}
+		
+		//DRAW PAC-MAN
+		//this could be replaced with an array containing all the radian values like
+		//plane.arc(pacman.x, pacman.y, pacman.size, sprite[pacman.facing[pacman.phase[0,1]]]
+		plane.beginPath();
+		switch(pacman.phase){
+			case 0:
+				//DIRECTION PAC-MAN IS FACING IS IRRELVANT AS ITS A CIRCLE
+				plane.arc(pacman.x, pacman.y, 20, 0, 6.3);
+			break;
+			case 1:
+			case 3:
+				switch(pacman.facing){
+					case UP:
+						plane.arc(pacman.x, pacman.y, 20, 5.5, 3.9);
+					break;
+					case RIGHT:
+						plane.arc(pacman.x, pacman.y, 20, 0.6, 5.6);
+					break;
+					case DOWN:
+						plane.arc(pacman.x, pacman.y, 20, 1.1, 2, true);
+					break;
+					case LEFT:
+						plane.arc(pacman.x, pacman.y, 20, 3.9, 2.4);
+					break;
+				}
+			break;
+			case 2:
+				switch(pacman.facing){
+					case UP:
+						plane.arc(pacman.x, pacman.y, 20, 5.8, 3.6);
+					break;
+					case RIGHT:
+						plane.arc(pacman.x, pacman.y, 20, 0.9, 5.3);
+					break;
+					case DOWN:
+						plane.arc(pacman.x, pacman.y, 20, 0.7, 2.3, true);
+					break;
+					case LEFT:
+						plane.arc(pacman.x, pacman.y, 20, 4.2, 2.1);
+					break;
+				}
+			break;
+		}
+		plane.lineTo(pacman.x, pacman.y);
+		plane.fill();
+		
+		//UPDATE PAC-MANS LOCATION
+		//put this in a function?
+		switch(pacman.facing){
+			case UP:
+				//check upper bound
+				//these distances to stop pacman going off the canvas seem wierd
+				//hes got a radius of 20, and is drawn from his centre point, so why do i need more than 20 pixels to stop him going off the canvas?
+				if(pacman.y >= 25){
+					pacman.x = pacman.x;
+					pacman.y = pacman.y - 5;
+				}
+			break;
+			case RIGHT:
+				if(pacman.x <= 423){
+					pacman.x = pacman.x + 5;
+					pacman.y = pacman.y;
+				}
+			break;
+			case DOWN:
+				if(pacman.y <= 471){
+					pacman.x = pacman.x;
+					pacman.y = pacman.y + 5;
+				}
+			break;
+			case LEFT:
+				if(pacman.x >= 25){
+					pacman.x = pacman.x - 5;
+					pacman.y = pacman.y;
+				}
+			break;
+		}
+		//UPDATE PAC-MANS DIRECTION
+		pacman.facing = direction;
+		//UPDATE PAC-MANS PHASE ('MOUTH')
+		if(pacman.phase == 3){
+			pacman.phase = 0;
+		}else{
+			pacman.phase = pacman.phase + 1;
+		}
+		
+	}
+	
+	//--
+	
+	//SET FRAME RATE (ALSO DOUBLES AS DIFFICULTY)
+	function setFrameRate(frameRate){
+		//STOP CURRENT REPEATER
+		if(typeof repeater !== 'undefined'){
+			clearInterval(repeater);
+		}
+		//RUN THE CANVAS
+		switch(frameRate){
+			case 'pause':
+				clearInterval(repeater);
+			break;
+			case 'slow':
+				repeater = setInterval(draw, 200);
+			break;
+			case 'medium':
+				repeater = setInterval(draw, 100);
+			break;
+			case 'fast':
+				repeater = setInterval(draw, 60);
+			break;
+			case 'destroy':
+				repeater = setInterval(draw, 25);
+			break;
+		}
+	}
+	
+	
+	//SET WALLS
+	//this function could use a maze generation algorithm to generate random but appropiate size mazes for each scale
+	function setWalls(wallOption){
+		
+		//CLEAR EXISTING WALLS FROM PREVIOUS GAMES
+		walls = [];
+		
+		switch(wallOption){
+			case 'none':
+				//DO NOTHING
+			break;
+			case 'border':	
+				//BORDER ROUND THE GAME AREA
+				for(i = 0; i < width; i++){
+					walls.push([i, 0])
+					walls.push([i, height - 1]);
+				}
+				for(j = 0; j < height; j++){
+					walls.push([0, j])
+					walls.push([width - 1, j]);
+				}
+			break;
+			case 'maze':
+				//BORDER ROUND THE GAME AREA
+				for(i = 0; i < width; i++){
+					walls.push([i, 0])
+					walls.push([i, height - 1]);
+				}
+				for(j = 0; j < height; j++){
+					walls.push([0, j])
+					walls.push([width - 1, j]);
+				}
+				//SWITCH MAP SCALE
+				switch(pixelSize){
+					case 10:
+						//MAZE ONE
+						walls.push([3,2]);
+						walls.push([3,3]);
+						walls.push([3,4]);
+						walls.push([3,5]);
+						walls.push([3,6]);
+						walls.push([4,6]);
+						walls.push([5,6]);
+					break;
+					case 20:
+						for(i = 1; i < 12; i++){
+							walls.push([28, i]);
+						}
+						for(i = 28; i < 40; i++){
+							walls.push([i, 12]);
+						}
+						walls.push([40,12]);
+						walls.push([40,11]);
+						walls.push([40,10]);
+						walls.push([40,9]);
+						for(i = 10; i < 31; i++){
+							walls.push([10, i]);
+						}
+						for(i = 28; i < 40; i++){
+							walls.push([i, 12]);
+						}
+					break;
+					case 50:
+						walls.push([3,3]);
+						walls.push([3,4]);
+						walls.push([3,5]);
+						walls.push([3,6]);
+						walls.push([2,6]);
+						walls.push([1,6]);
+						walls.push([9,5]);
+						walls.push([9,6]);
+						walls.push([9,7]);
+						walls.push([9,8]);
+						walls.push([9,9]);
+						walls.push([10,9]);
+						walls.push([11,9]);
+						walls.push([12,9]);
+						walls.push([13,9]);
+						walls.push([14,9]);
+						walls.push([15,9]);
+						walls.push([16,9]);
+					break;
+				}
+			break;
+		}
+	}
+	
+	
+	
+	//--
+	
+	//CALL THIS TO CLEAR THE BOARD, START A NEW GAME
+	function newGame(){
+		//CLEAR CANVAS
+		plane.clearRect(0,0,canvas.width,canvas.height);
+
+	}
+	
+	function startGame(){
+		//HIDE NEW GAME DIV
+		//document.getElementById("newGame").style.display = 'none';
+		
+		//SET WALLS
+		//setWalls(document.getElementById('walls').value);
+		
+		//
+		//existingDirection = UP;
+		//direction = UP;
+		
+		//SET FRAME RATE AND START DRAW LOOP
+		setFrameRate('fast');
+	}
+	
+	//CALL THIS TO DISPLAY GAME OVER
+	function gameOver(){
+		//STOP REPEATER
+		setFrameRate('pause');
+		//DISPLAY GAME OVER DIV
+		document.getElementById('gameOver').style.display = 'block';
+		document.getElementsByClassName('score')[1].innerHTML = score;
+	}
+	
+	//--	
+	
+	//RUN
+	newGame();
+	
+	//--
+	
+	//FURTHER IDEAS
+	//Add in a modifier for difficulty, potentially also time played and some kind of multiplier.
+	//Make jewels always spawn within a reachable distance from the snake, so it becomes a race to collect them, requiring minimal uneccessary movement before it despawns
+	//Two player support
+	
+</script>
