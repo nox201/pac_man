@@ -24,6 +24,9 @@
 	const DOWN = 2;
 	const LEFT = 3;
 	
+	//DEBUG OPTIONS
+	var drawBounds = true;
+	
 	//CANVAS
 	let canvas = document.getElementById('game');
 	let plane = canvas.getContext("2d");
@@ -36,26 +39,66 @@
 	var direction = RIGHT;
 	var existingDirection = RIGHT;
 	var walls = [];
+	//walls.push([[50, 50], [50, 100], [100, 100], [100, 50]]);
+	//walls.push([[150, 150], [150, 200], [200, 200], [200, 150]]);
+	//x, y, width, height
+	walls.push({x:250,y:250,w:50,h:50});
+	walls.push({x:150,y:150,w:50,h:50});
+	
+	var hasHitWall = false;
 	
 	var pacman = {
 		x: 20,
 		y: 20,
+		radius: 20,
+		//BOUNDS HAVE DEFAULT VALUES WHICH WILL BE OVERWRITTEN AS SOON AS updatePosition IS CALLED
+		bounds: {x: 0, y: 0, w: 40, h: 40},
 		phase: 0,
 		facing: direction,
+		updatePosition: function(x, y){
+			if(!hasHitWall){
+				this.x = x;
+				this.y = y;
+			}
+			this.bounds.x = x - this.radius;
+			this.bounds.y = y - this.radius;
+			this.bounds.w = this.radius * 2;
+			this.bounds.h = this.radius * 2;
+			//BOUNDS MUST EXTEND ONE PIXEL FURTHER IN FRONT OF PAC-MANS FACING DIRECTION TO PREVENT HIM GETTING STUCK IN WALLS
+			//this doesn't quite work right
+			switch(this.facing){
+				case UP: 
+					this.bounds.y = this.bounds.y - 5;
+				break;
+				case RIGHT:
+					this.bounds.w = this.bounds.w + 5;
+				break;
+				case DOWN:
+					this.bounds.h = this.bounds.h + 5;
+				break;
+				case LEFT:
+					this.bounds.x = this.bounds.x - 5;
+				break;
+			}
+			
+			hasHitWall = false;
+			//DEBUG
+			//console.log('this.x: ' + x + ', this.y: ' + y + ', bounds.x: ' + this.bounds.x + ', bounds.y: ' + this.bounds.y + ', bounds.w: ' + this.bounds.w + ', bounds.h: ' + this.bounds.h);
+			
+		},
+		intersects: function(rect){
+			return !( rect.x > (this.bounds.x + this.bounds.w) || (rect.x + rect.w) < this.bounds.x || rect.y > (this.bounds.y + this.bounds.h) || (rect.y + rect.h) < this.bounds.y);
+		}
 	};
-	
-
-	
-	//3.141592653589793
-	//4.71238898038469 
-	//6.283185307179586
-	
 	
 	//ADD KEY EVENT LISTENERS
 	//issue here where you can press two keys in between frames, still allowing the snake to travel back over itself because you can
 	//be travelling up and then press left and then down before the next frame
 	document.addEventListener("keydown", changeDirection);
 	function changeDirection(e){
+		//RESET FLAG
+		hasHitWall = false;
+		//SWITCH INPUT
 		switch(e.code){
 			case 'KeyW':
 			case 'ArrowUp':
@@ -73,6 +116,9 @@
 			case 'ArrowLeft':
 				direction = LEFT;
 			break;
+			case 'Space':
+				setFrameRate('pause');
+			break;
 		}
 		//console.log('current direction is ' + direction);
 	}
@@ -83,21 +129,15 @@
 	//DRAW FUNCTION
 	function draw(){
 		
+		//DEBUG
 		console.log('drawn');
 		
 		//CLEAR PREVIOUS
 		plane.clearRect(0,0,canvas.width,canvas.height);
 		
-		//DRAW THE WALLS
-		for(w = 0; w < walls.length; w++){
-			//console.log(walls[w]);
-			//DRAW RECTANGLE
-			plane.beginPath();
-			plane.rect(walls[w][0] * pixelSize, walls[w][1] * pixelSize, pixelSize, pixelSize);
-			plane.fillStyle = '#000';
-			plane.fill();
-		}
-		
+		//DRAW THE WALLS - ALSO DO WALL HIT COLLISION DETECTION
+		drawWalls();
+
 		//DRAW PAC-MAN
 		//this could be replaced with an array containing all the radian values like
 		//plane.arc(pacman.x, pacman.y, pacman.size, sprite[pacman.facing[pacman.phase[0,1]]]
@@ -105,38 +145,38 @@
 		switch(pacman.phase){
 			case 0:
 				//DIRECTION PAC-MAN IS FACING IS IRRELVANT AS ITS A CIRCLE
-				plane.arc(pacman.x, pacman.y, 20, 0, 6.3);
+				plane.arc(pacman.x, pacman.y, pacman.radius, 0, 6.3);
 			break;
 			case 1:
 			case 3:
 				switch(pacman.facing){
 					case UP:
-						plane.arc(pacman.x, pacman.y, 20, 5.5, 3.9);
+						plane.arc(pacman.x, pacman.y, pacman.radius, 5.5, 3.9);
 					break;
 					case RIGHT:
-						plane.arc(pacman.x, pacman.y, 20, 0.6, 5.6);
+						plane.arc(pacman.x, pacman.y, pacman.radius, 0.6, 5.6);
 					break;
 					case DOWN:
-						plane.arc(pacman.x, pacman.y, 20, 1.1, 2, true);
+						plane.arc(pacman.x, pacman.y, pacman.radius, 1.1, 2, true);
 					break;
 					case LEFT:
-						plane.arc(pacman.x, pacman.y, 20, 3.9, 2.4);
+						plane.arc(pacman.x, pacman.y, pacman.radius, 3.9, 2.4);
 					break;
 				}
 			break;
 			case 2:
 				switch(pacman.facing){
 					case UP:
-						plane.arc(pacman.x, pacman.y, 20, 5.8, 3.6);
+						plane.arc(pacman.x, pacman.y, pacman.radius, 5.8, 3.6);
 					break;
 					case RIGHT:
-						plane.arc(pacman.x, pacman.y, 20, 0.9, 5.3);
+						plane.arc(pacman.x, pacman.y, pacman.radius, 0.9, 5.3);
 					break;
 					case DOWN:
-						plane.arc(pacman.x, pacman.y, 20, 0.7, 2.3, true);
+						plane.arc(pacman.x, pacman.y, pacman.radius, 0.7, 2.3, true);
 					break;
 					case LEFT:
-						plane.arc(pacman.x, pacman.y, 20, 4.2, 2.1);
+						plane.arc(pacman.x, pacman.y, pacman.radius, 4.2, 2.1);
 					break;
 				}
 			break;
@@ -144,34 +184,38 @@
 		plane.lineTo(pacman.x, pacman.y);
 		plane.fill();
 		
+		//DEBUG - DRAW BOUNDS
+		if(drawBounds){
+			plane.rect(pacman.bounds.x, pacman.bounds.y, pacman.bounds.w, pacman.bounds.h);
+			plane.fillStyle = '#EEE';
+			plane.stroke();
+			
+		}
+		
 		//UPDATE PAC-MANS LOCATION
-		//put this in a function?
+		//put this in a function? drawPacman?
 		switch(pacman.facing){
 			case UP:
-				//check upper bound
 				//these distances to stop pacman going off the canvas seem wierd
 				//hes got a radius of 20, and is drawn from his centre point, so why do i need more than 20 pixels to stop him going off the canvas?
+				//probably just replace these with 1px wide walls all round the canvas?
 				if(pacman.y >= 25){
-					pacman.x = pacman.x;
-					pacman.y = pacman.y - 5;
+					pacman.updatePosition(pacman.x, pacman.y - 5);
 				}
 			break;
 			case RIGHT:
 				if(pacman.x <= 423){
-					pacman.x = pacman.x + 5;
-					pacman.y = pacman.y;
+					pacman.updatePosition(pacman.x + 5, pacman.y);
 				}
 			break;
 			case DOWN:
 				if(pacman.y <= 471){
-					pacman.x = pacman.x;
-					pacman.y = pacman.y + 5;
+					pacman.updatePosition(pacman.x, pacman.y + 5);
 				}
 			break;
 			case LEFT:
 				if(pacman.x >= 25){
-					pacman.x = pacman.x - 5;
-					pacman.y = pacman.y;
+					pacman.updatePosition(pacman.x - 5, pacman.y);
 				}
 			break;
 		}
@@ -182,6 +226,28 @@
 			pacman.phase = 0;
 		}else{
 			pacman.phase = pacman.phase + 1;
+		}
+		//---------------------------------------DEBUG, want to see the full circle!!!!
+		pacman.phase = 0;
+	
+	}
+	
+	//--
+	
+	function drawWalls(){
+		
+		for(i = 0; i < walls.length; i++){
+			plane.beginPath();
+			plane.rect(walls[i].x, walls[i].y, walls[i].w, walls[i].h);
+			plane.fillStyle = '#AAA';
+			plane.fill();
+			//CHECK IF PAC-MAN HAS HIT A WALL
+			if(pacman.intersects(walls[i])){
+				//DEBUG
+				//console.log('intersects wall ' + i);
+				//SET FLAG
+				hasHitWall = true;
+			}
 		}
 		
 	}
@@ -214,95 +280,7 @@
 		}
 	}
 	
-	
-	//SET WALLS
-	//this function could use a maze generation algorithm to generate random but appropiate size mazes for each scale
-	function setWalls(wallOption){
-		
-		//CLEAR EXISTING WALLS FROM PREVIOUS GAMES
-		walls = [];
-		
-		switch(wallOption){
-			case 'none':
-				//DO NOTHING
-			break;
-			case 'border':	
-				//BORDER ROUND THE GAME AREA
-				for(i = 0; i < width; i++){
-					walls.push([i, 0])
-					walls.push([i, height - 1]);
-				}
-				for(j = 0; j < height; j++){
-					walls.push([0, j])
-					walls.push([width - 1, j]);
-				}
-			break;
-			case 'maze':
-				//BORDER ROUND THE GAME AREA
-				for(i = 0; i < width; i++){
-					walls.push([i, 0])
-					walls.push([i, height - 1]);
-				}
-				for(j = 0; j < height; j++){
-					walls.push([0, j])
-					walls.push([width - 1, j]);
-				}
-				//SWITCH MAP SCALE
-				switch(pixelSize){
-					case 10:
-						//MAZE ONE
-						walls.push([3,2]);
-						walls.push([3,3]);
-						walls.push([3,4]);
-						walls.push([3,5]);
-						walls.push([3,6]);
-						walls.push([4,6]);
-						walls.push([5,6]);
-					break;
-					case 20:
-						for(i = 1; i < 12; i++){
-							walls.push([28, i]);
-						}
-						for(i = 28; i < 40; i++){
-							walls.push([i, 12]);
-						}
-						walls.push([40,12]);
-						walls.push([40,11]);
-						walls.push([40,10]);
-						walls.push([40,9]);
-						for(i = 10; i < 31; i++){
-							walls.push([10, i]);
-						}
-						for(i = 28; i < 40; i++){
-							walls.push([i, 12]);
-						}
-					break;
-					case 50:
-						walls.push([3,3]);
-						walls.push([3,4]);
-						walls.push([3,5]);
-						walls.push([3,6]);
-						walls.push([2,6]);
-						walls.push([1,6]);
-						walls.push([9,5]);
-						walls.push([9,6]);
-						walls.push([9,7]);
-						walls.push([9,8]);
-						walls.push([9,9]);
-						walls.push([10,9]);
-						walls.push([11,9]);
-						walls.push([12,9]);
-						walls.push([13,9]);
-						walls.push([14,9]);
-						walls.push([15,9]);
-						walls.push([16,9]);
-					break;
-				}
-			break;
-		}
-	}
-	
-	
+
 	
 	//--
 	
@@ -341,6 +319,9 @@
 	
 	//RUN
 	newGame();
+	
+	//start game to save button press while developing
+	startGame();
 	
 	//--
 	
