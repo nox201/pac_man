@@ -10,7 +10,9 @@
 
 <body>
 	<div class="gameArea">
-		<canvas id="game" width="448" height="496" style="border: 2px solid black"></canvas>
+		<!--<canvas id="game" width="448" height="496" style="border: 2px solid black"></canvas>-->
+		<canvas id="game" width="494" height="598" style="border: 2px solid black"></canvas>
+		squares of 26 x 26 pixels.
 	</div>
 	<button onclick="startGame()">Start</button>
 	<button onclick="setFrameRate('pause')">Pause</button>
@@ -26,6 +28,7 @@
 	
 	//DEBUG OPTIONS
 	var drawBounds = true;
+	var showCoords = true;
 	
 	//CANVAS
 	let canvas = document.getElementById('game');
@@ -38,50 +41,83 @@
 	var score = 0;
 	var direction = RIGHT;
 	var existingDirection = RIGHT;
-	var walls = [];
-	//walls.push([[50, 50], [50, 100], [100, 100], [100, 50]]);
-	//walls.push([[150, 150], [150, 200], [200, 200], [200, 150]]);
-	//x, y, width, height
-	walls.push({x:250,y:250,w:50,h:50});
-	walls.push({x:150,y:150,w:50,h:50});
 	
-	var hasHitWall = false;
+	var speed = 5;
+	
+	var walls = [];
+	//x, y, width, height
+	walls.push({x:0,y:0,w:494,h:26});
+	walls.push({x:0,y:26,w:26,h:182});
+	walls.push({x:468,y:26,w:50,h:182});
+	walls.push({x:52,y:52,w:52,h:52});
+	walls.push({x:130,y:52,w:78,h:52});
+	walls.push({x:234,y:26,w:26,h:78});
+	walls.push({x:286,y:52,w:78,h:52});
+	walls.push({x:390,y:52,w:52,h:52});
+	walls.push({x:52,y:130,w:52,h:26});
+	walls.push({x:130,y:130,w:26,h:130});
+	walls.push({x:182,y:130,w:130,h:26});
+	walls.push({x:338,y:130,w:26,h:130});
+	walls.push({x:390,y:130,w:52,h:26});
+	walls.push({x:234,y:156,w:26,h:52});
+	walls.push({x:156,y:182,w:52,h:26});
+	walls.push({x:286,y:182,w:52,h:26});
+	walls.push({x:26,y:182,w:78,h:26});
+	walls.push({x:390,y:182,w:78,h:26});
+	walls.push({x:78,y:208,w:26,h:26});
+	walls.push({x:390,y:208,w:26,h:26});
+	walls.push({x:0,y:234,w:104,h:26});
+	walls.push({x:390,y:234,w:104,h:26});
+	//ghostbox
+	walls.push({x:182,y:234,w:130,h:78});
+	
+	
+	walls.push({x:0,y:0,w:0,h:0});
+	
+	walls.push({x:0,y:0,w:0,h:0});
+	walls.push({x:0,y:0,w:0,h:0});
+	walls.push({x:0,y:0,w:0,h:0});
+	walls.push({x:0,y:0,w:0,h:0});
+	walls.push({x:0,y:0,w:0,h:0});
+	walls.push({x:0,y:0,w:0,h:0});
+	walls.push({x:0,y:0,w:0,h:0});
+	walls.push({x:0,y:0,w:0,h:0});
+	walls.push({x:0,y:0,w:0,h:0});
+	walls.push({x:0,y:0,w:0,h:0});
+	walls.push({x:0,y:0,w:0,h:0});
+	
+	
 	
 	var pacman = {
-		x: 20,
-		y: 20,
-		radius: 20,
+		x: 38,
+		y: 38,
+		radius: 10,
 		//BOUNDS HAVE DEFAULT VALUES WHICH WILL BE OVERWRITTEN AS SOON AS updatePosition IS CALLED
-		bounds: {x: 0, y: 0, w: 40, h: 40},
+		bounds: {x: 30, y: 30, w: 2, h: 2},
 		phase: 0,
 		facing: direction,
 		updatePosition: function(x, y){
-			if(!hasHitWall){
-				this.x = x;
-				this.y = y;
-			}
+			this.x = x;
+			this.y = y;
 			this.bounds.x = x - this.radius;
 			this.bounds.y = y - this.radius;
 			this.bounds.w = this.radius * 2;
 			this.bounds.h = this.radius * 2;
 			//BOUNDS MUST EXTEND ONE PIXEL FURTHER IN FRONT OF PAC-MANS FACING DIRECTION TO PREVENT HIM GETTING STUCK IN WALLS
-			//this doesn't quite work right
 			switch(this.facing){
 				case UP: 
-					this.bounds.y = this.bounds.y - 5;
+					this.bounds.y = this.bounds.y - speed;
 				break;
 				case RIGHT:
-					this.bounds.w = this.bounds.w + 5;
+					this.bounds.w = this.bounds.w + speed;
 				break;
 				case DOWN:
-					this.bounds.h = this.bounds.h + 5;
+					this.bounds.h = this.bounds.h + speed;
 				break;
 				case LEFT:
-					this.bounds.x = this.bounds.x - 5;
+					this.bounds.x = this.bounds.x - speed;
 				break;
 			}
-			
-			hasHitWall = false;
 			//DEBUG
 			//console.log('this.x: ' + x + ', this.y: ' + y + ', bounds.x: ' + this.bounds.x + ', bounds.y: ' + this.bounds.y + ', bounds.w: ' + this.bounds.w + ', bounds.h: ' + this.bounds.h);
 			
@@ -92,8 +128,6 @@
 	};
 	
 	//ADD KEY EVENT LISTENERS
-	//issue here where you can press two keys in between frames, still allowing the snake to travel back over itself because you can
-	//be travelling up and then press left and then down before the next frame
 	document.addEventListener("keydown", changeDirection);
 	function changeDirection(e){
 		//RESET FLAG
@@ -102,19 +136,45 @@
 		switch(e.code){
 			case 'KeyW':
 			case 'ArrowUp':
-				direction = UP;
+				//CHECK FOR COLLISION
+				pacman.bounds.y = pacman.bounds.y - speed;
+				for(i = 0; i < walls.length; i++){
+					if(!pacman.intersects(walls[i])){
+						direction = UP;
+					}
+				}
+				//RESET BOUNDS
+				pacman.bounds.y = pacman.bounds.y + speed;
 			break;
 			case 'KeyD':
 			case 'ArrowRight':
-				direction = RIGHT;
+				pacman.bounds.w = pacman.bounds.w + speed;
+				for(i = 0; i < walls.length; i++){
+					if(!pacman.intersects(walls[i])){
+						direction = RIGHT;
+					}
+				}
+				pacman.bounds.w = pacman.bounds.w - speed;
 			break;
 			case 'KeyS':
 			case 'ArrowDown':
-				direction = DOWN;
+				pacman.bounds.h = pacman.bounds.h + speed;
+				for(i = 0; i < walls.length; i++){
+					if(!pacman.intersects(walls[i])){
+						direction = DOWN;
+					}
+				}
+				pacman.bounds.h = pacman.bounds.h - speed;
 			break;
 			case 'KeyA':
 			case 'ArrowLeft':
-				direction = LEFT;
+				pacman.bounds.x = pacman.bounds.x - speed;
+				for(i = 0; i < walls.length; i++){
+					if(!pacman.intersects(walls[i])){
+						direction = LEFT;
+					}
+				}
+				pacman.bounds.x = pacman.bounds.x + speed;
 			break;
 			case 'Space':
 				setFrameRate('pause');
@@ -125,19 +185,141 @@
 	
 
 	//--
-	
+
 	//DRAW FUNCTION
 	function draw(){
 		
 		//DEBUG
 		console.log('drawn');
+		//console.log('direction: ' + direction + ', facing: ' + pacman.facing);
 		
 		//CLEAR PREVIOUS
 		plane.clearRect(0,0,canvas.width,canvas.height);
 		
-		//DRAW THE WALLS - ALSO DO WALL HIT COLLISION DETECTION
+		//DEBUG - DISPLAY PIXEL COORDINATES
+		if(showCoords){
+			plane.fillStyle = '#000'; 
+			plane.font = '7px sans serif';
+			for(i = 0; i < 494; i = i + 26){
+				for(j = 0; j < 598; j = j + 26){
+					console.log(i, j);
+					plane.fillText(i + ',' + j, i, j);
+				}
+			}
+		}
+		
+		//DRAW THE WALLS
 		drawWalls();
-
+		
+		//DRAW PAC-MAN
+		drawPacman();
+		
+		//--
+		
+		//UPDATE PAC-MANS DIRECTION
+		pacman.facing = direction;
+		
+		//--
+		
+		//UPDATE PAC-MANS LOCATION
+		collided = false;
+		switch(pacman.facing){
+			case UP:
+				//these distances to stop pacman going off the canvas seem wierd
+				//hes got a radius of 20, and is drawn from his centre point, so why do i need more than 20 pixels to stop him going off the canvas?
+				//probably just replace these with 1px wide walls all round the canvas?
+				if(pacman.y >= 25){
+					//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
+					pacman.bounds.y = pacman.bounds.y - speed;
+					//ITERATE ALL WALLS
+					//potential optimization here - only look at walls with an open face in the direction pac-man is facing?
+					for(i = 0; i < walls.length; i++){
+						//CHECKS THE BOUNDS AGAINST THE WALL
+						if(pacman.intersects(walls[i])){
+							//SET FLAG
+							collided = true;
+							//NO NEED TO CHECK FURTHER WALLS
+							break;
+						}
+					}
+					//CHECK FLAG
+					if(!collided){
+						//NO COLLISION - UPDATE PAC-MANS POSITION
+						pacman.updatePosition(pacman.x, pacman.y - speed);
+					}
+					//RESET BOUNDS
+					pacman.bounds.y = pacman.bounds.y + speed;
+				}
+			break;
+			case RIGHT:
+				if(pacman.x <= 423){
+					pacman.bounds.w = pacman.bounds.w + speed;
+					for(i = 0; i < walls.length; i++){
+						if(pacman.intersects(walls[i])){
+							collided = true;
+							break;
+						}
+					}
+					if(!collided){
+						pacman.updatePosition(pacman.x + speed, pacman.y);
+					}
+					pacman.bounds.w = pacman.bounds.w - speed;
+				}
+			break;
+			case DOWN:
+				if(pacman.y <= 471){
+					pacman.bounds.h = pacman.bounds.h + speed;
+					for(i = 0; i < walls.length; i++){
+						if(pacman.intersects(walls[i])){
+							collided = true;
+							break;
+						}
+					}
+					if(!collided){
+						pacman.updatePosition(pacman.x, pacman.y + speed);
+					}
+					pacman.bounds.h = pacman.bounds.h - speed;
+				}
+			break;
+			case LEFT:
+				if(pacman.x >= 25){
+					pacman.bounds.x = pacman.bounds.x - speed;
+					for(i = 0; i < walls.length; i++){
+						if(pacman.intersects(walls[i])){
+							collided = true;
+							break;
+						}
+					}
+					if(!collided){
+						pacman.updatePosition(pacman.x - speed, pacman.y);
+					}
+					pacman.bounds.x = pacman.bounds.x + speed;
+				}
+			break;
+		}
+		
+		//UPDATE PAC-MANS PHASE ('MOUTH')
+		if(pacman.phase == 3){
+			pacman.phase = 0;
+		}else{
+			pacman.phase = pacman.phase + 1;
+		}
+	
+	}
+	
+	//--
+	
+	function drawWalls(){
+		for(i = 0; i < walls.length; i++){
+			plane.beginPath();
+			plane.rect(walls[i].x, walls[i].y, walls[i].w, walls[i].h);
+			plane.fillStyle = '#AAA';
+			//plane.fill();
+			plane.stroke();
+		}
+	}
+	
+	function drawPacman(){
 		//DRAW PAC-MAN
 		//this could be replaced with an array containing all the radian values like
 		//plane.arc(pacman.x, pacman.y, pacman.size, sprite[pacman.facing[pacman.phase[0,1]]]
@@ -189,67 +371,7 @@
 			plane.rect(pacman.bounds.x, pacman.bounds.y, pacman.bounds.w, pacman.bounds.h);
 			plane.fillStyle = '#EEE';
 			plane.stroke();
-			
 		}
-		
-		//UPDATE PAC-MANS LOCATION
-		//put this in a function? drawPacman?
-		switch(pacman.facing){
-			case UP:
-				//these distances to stop pacman going off the canvas seem wierd
-				//hes got a radius of 20, and is drawn from his centre point, so why do i need more than 20 pixels to stop him going off the canvas?
-				//probably just replace these with 1px wide walls all round the canvas?
-				if(pacman.y >= 25){
-					pacman.updatePosition(pacman.x, pacman.y - 5);
-				}
-			break;
-			case RIGHT:
-				if(pacman.x <= 423){
-					pacman.updatePosition(pacman.x + 5, pacman.y);
-				}
-			break;
-			case DOWN:
-				if(pacman.y <= 471){
-					pacman.updatePosition(pacman.x, pacman.y + 5);
-				}
-			break;
-			case LEFT:
-				if(pacman.x >= 25){
-					pacman.updatePosition(pacman.x - 5, pacman.y);
-				}
-			break;
-		}
-		//UPDATE PAC-MANS DIRECTION
-		pacman.facing = direction;
-		//UPDATE PAC-MANS PHASE ('MOUTH')
-		if(pacman.phase == 3){
-			pacman.phase = 0;
-		}else{
-			pacman.phase = pacman.phase + 1;
-		}
-		//---------------------------------------DEBUG, want to see the full circle!!!!
-		pacman.phase = 0;
-	
-	}
-	
-	//--
-	
-	function drawWalls(){
-		
-		for(i = 0; i < walls.length; i++){
-			plane.beginPath();
-			plane.rect(walls[i].x, walls[i].y, walls[i].w, walls[i].h);
-			plane.fillStyle = '#AAA';
-			plane.fill();
-			//CHECK IF PAC-MAN HAS HIT A WALL
-			if(pacman.intersects(walls[i])){
-				//DEBUG
-				//console.log('intersects wall ' + i);
-				//SET FLAG
-				hasHitWall = true;
-			}
-		}
-		
 	}
 	
 	//--
