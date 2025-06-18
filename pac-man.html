@@ -3,15 +3,17 @@
 <html>
 	<head>
 		<style>
-	
+			#game {
+				background-image: url("background.png");
+				border: 2px solid black;
+			}
 		</style>
 	</head>
 </html>
 
 <body>
 	<div class="gameArea">
-		<!--<canvas id="game" width="448" height="496" style="border: 2px solid black"></canvas>-->
-		<canvas id="game" width="494" height="598" style="border: 2px solid black"></canvas>
+		<canvas id="game" width="494" height="572"></canvas>
 		squares of 26 x 26 pixels.
 	</div>
 	<button onclick="startGame()">Start</button>
@@ -27,8 +29,8 @@
 	const LEFT = 3;
 	
 	//DEBUG OPTIONS
-	var drawBounds = true;
-	var showCoords = true;
+	var drawBounds = false;
+	var showCoords = false;
 	
 	//CANVAS
 	let canvas = document.getElementById('game');
@@ -70,23 +72,33 @@
 	walls.push({x:390,y:234,w:104,h:26});
 	//ghostbox
 	walls.push({x:182,y:234,w:130,h:78});
-	
-	
-	walls.push({x:0,y:0,w:0,h:0});
-	
-	walls.push({x:0,y:0,w:0,h:0});
-	walls.push({x:0,y:0,w:0,h:0});
-	walls.push({x:0,y:0,w:0,h:0});
-	walls.push({x:0,y:0,w:0,h:0});
-	walls.push({x:0,y:0,w:0,h:0});
-	walls.push({x:0,y:0,w:0,h:0});
-	walls.push({x:0,y:0,w:0,h:0});
-	walls.push({x:0,y:0,w:0,h:0});
-	walls.push({x:0,y:0,w:0,h:0});
-	walls.push({x:0,y:0,w:0,h:0});
-	walls.push({x:0,y:0,w:0,h:0});
-	
-	
+	walls.push({x:0,y:286,w:104,h:26});
+	walls.push({x:130,y:286,w:26,h:78});
+	walls.push({x:338,y:286,w:26,h:78});
+	walls.push({x:390,y:286,w:104,h:26});
+	walls.push({x:78,y:312,w:26,h:26});
+	walls.push({x:390,y:312,w:26,h:26});
+	walls.push({x:0,y:338,w:104,h:26});
+	walls.push({x:390,y:338,w:104,h:26});
+	walls.push({x:182,y:338,w:130,h:26});
+	walls.push({x:234,y:364,w:26,h:52});
+	walls.push({x:0,y:364,w:26,h:208});
+	walls.push({x:468,y:364,w:26,h:208});
+	walls.push({x:52,y:390,w:52,h:26});
+	walls.push({x:130,y:390,w:78,h:26});
+	walls.push({x:286,y:390,w:78,h:26});
+	walls.push({x:390,y:390,w:52,h:26});
+	walls.push({x:78,y:416,w:26,h:52});
+	walls.push({x:390,y:416,w:26,h:52});
+	walls.push({x:26,y:442,w:26,h:26});
+	walls.push({x:442,y:442,w:26,h:26});
+	walls.push({x:130,y:442,w:26,h:52});
+	walls.push({x:338,y:442,w:26,h:52});
+	walls.push({x:182,y:442,w:130,h:26});
+	walls.push({x:234,y:468,w:26,h:52});
+	walls.push({x:52,y:494,w:156,h:26});
+	walls.push({x:286,y:494,w:156,h:26});
+	walls.push({x:26,y:546,w:468,h:26});
 	
 	var pacman = {
 		x: 38,
@@ -99,11 +111,13 @@
 		updatePosition: function(x, y){
 			this.x = x;
 			this.y = y;
-			this.bounds.x = x - this.radius;
-			this.bounds.y = y - this.radius;
-			this.bounds.w = this.radius * 2;
-			this.bounds.h = this.radius * 2;
-			//BOUNDS MUST EXTEND ONE PIXEL FURTHER IN FRONT OF PAC-MANS FACING DIRECTION TO PREVENT HIM GETTING STUCK IN WALLS
+			this.bounds.x = x - this.radius + 1;
+			this.bounds.y = y - this.radius + 1;
+			//MINUS 1 TO THE BOUNDS ALLOWS FOR EASIER MOVEMENT, PAC-MAN DOESN'T NEED PERFECT INPUTS TO GET INTO TUNNELS
+			//CAN MAKE THE GAME EASIER/HARDER BY CHANGING THESE VALUES, ALTERING THE SIZE OF THE BOUNDS, WHILE PAC-MAN STAYS THE SAME SIZE?
+			this.bounds.w = this.radius * 2 - 2;
+			this.bounds.h = this.radius * 2 - 2;
+
 			switch(this.facing){
 				case UP: 
 					this.bounds.y = this.bounds.y - speed;
@@ -227,74 +241,66 @@
 			case UP:
 				//these distances to stop pacman going off the canvas seem wierd
 				//hes got a radius of 20, and is drawn from his centre point, so why do i need more than 20 pixels to stop him going off the canvas?
-				//probably just replace these with 1px wide walls all round the canvas?
-				if(pacman.y >= 25){
-					//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
-					pacman.bounds.y = pacman.bounds.y - speed;
-					//ITERATE ALL WALLS
-					//potential optimization here - only look at walls with an open face in the direction pac-man is facing?
-					for(i = 0; i < walls.length; i++){
-						//CHECKS THE BOUNDS AGAINST THE WALL
-						if(pacman.intersects(walls[i])){
-							//SET FLAG
-							collided = true;
-							//NO NEED TO CHECK FURTHER WALLS
-							break;
-						}
+
+				//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
+				pacman.bounds.y = pacman.bounds.y - speed;
+				//ITERATE ALL WALLS
+				//potential optimization here - only look at walls with an open face in the direction pac-man is facing?
+				for(i = 0; i < walls.length; i++){
+					//CHECKS THE BOUNDS AGAINST THE WALL
+					if(pacman.intersects(walls[i])){
+						//SET FLAG
+						collided = true;
+						//NO NEED TO CHECK FURTHER WALLS
+						break;
 					}
-					//CHECK FLAG
-					if(!collided){
-						//NO COLLISION - UPDATE PAC-MANS POSITION
-						pacman.updatePosition(pacman.x, pacman.y - speed);
-					}
-					//RESET BOUNDS
-					pacman.bounds.y = pacman.bounds.y + speed;
 				}
+				//CHECK FLAG
+				if(!collided){
+					//NO COLLISION - UPDATE PAC-MANS POSITION
+					pacman.updatePosition(pacman.x, pacman.y - speed);
+				}
+				//RESET BOUNDS
+				pacman.bounds.y = pacman.bounds.y + speed;
 			break;
 			case RIGHT:
-				if(pacman.x <= 423){
-					pacman.bounds.w = pacman.bounds.w + speed;
-					for(i = 0; i < walls.length; i++){
-						if(pacman.intersects(walls[i])){
-							collided = true;
-							break;
-						}
+				pacman.bounds.w = pacman.bounds.w + speed;
+				for(i = 0; i < walls.length; i++){
+					if(pacman.intersects(walls[i])){
+						collided = true;
+						break;
 					}
-					if(!collided){
-						pacman.updatePosition(pacman.x + speed, pacman.y);
-					}
-					pacman.bounds.w = pacman.bounds.w - speed;
 				}
+				if(!collided){
+					pacman.updatePosition(pacman.x + speed, pacman.y);
+				}
+				pacman.bounds.w = pacman.bounds.w - speed;
 			break;
 			case DOWN:
-				if(pacman.y <= 471){
-					pacman.bounds.h = pacman.bounds.h + speed;
-					for(i = 0; i < walls.length; i++){
-						if(pacman.intersects(walls[i])){
-							collided = true;
-							break;
-						}
+				pacman.bounds.h = pacman.bounds.h + speed;
+				for(i = 0; i < walls.length; i++){
+					if(pacman.intersects(walls[i])){
+						collided = true;
+						break;
 					}
-					if(!collided){
-						pacman.updatePosition(pacman.x, pacman.y + speed);
-					}
-					pacman.bounds.h = pacman.bounds.h - speed;
 				}
+				if(!collided){
+					pacman.updatePosition(pacman.x, pacman.y + speed);
+				}
+				pacman.bounds.h = pacman.bounds.h - speed;
 			break;
 			case LEFT:
-				if(pacman.x >= 25){
-					pacman.bounds.x = pacman.bounds.x - speed;
-					for(i = 0; i < walls.length; i++){
-						if(pacman.intersects(walls[i])){
-							collided = true;
-							break;
-						}
+				pacman.bounds.x = pacman.bounds.x - speed;
+				for(i = 0; i < walls.length; i++){
+					if(pacman.intersects(walls[i])){
+						collided = true;
+						break;
 					}
-					if(!collided){
-						pacman.updatePosition(pacman.x - speed, pacman.y);
-					}
-					pacman.bounds.x = pacman.bounds.x + speed;
 				}
+				if(!collided){
+					pacman.updatePosition(pacman.x - speed, pacman.y);
+				}
+				pacman.bounds.x = pacman.bounds.x + speed;
 			break;
 		}
 		
@@ -313,8 +319,7 @@
 		for(i = 0; i < walls.length; i++){
 			plane.beginPath();
 			plane.rect(walls[i].x, walls[i].y, walls[i].w, walls[i].h);
-			plane.fillStyle = '#AAA';
-			//plane.fill();
+			plane.strokeStyle = '#FFF';
 			plane.stroke();
 		}
 	}
@@ -364,6 +369,7 @@
 			break;
 		}
 		plane.lineTo(pacman.x, pacman.y);
+		plane.fillStyle = '#FFFF00';
 		plane.fill();
 		
 		//DEBUG - DRAW BOUNDS
@@ -443,7 +449,7 @@
 	newGame();
 	
 	//start game to save button press while developing
-	startGame();
+	//startGame();
 	
 	//--
 	
