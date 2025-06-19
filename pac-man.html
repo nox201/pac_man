@@ -4,8 +4,7 @@
 	<head>
 		<style>
 			#game {
-				background-image: url("background.png");
-				border: 2px solid black;
+				background-color: black;
 			}
 		</style>
 	</head>
@@ -29,7 +28,7 @@
 	const LEFT = 3;
 	
 	//DEBUG OPTIONS
-	var drawBounds = false;
+	var drawBounds = true;
 	var showCoords = false;
 	
 	//CANVAS
@@ -115,6 +114,45 @@
 			this.bounds.y = y - this.radius + 1;
 			//MINUS 1 TO THE BOUNDS ALLOWS FOR EASIER MOVEMENT, PAC-MAN DOESN'T NEED PERFECT INPUTS TO GET INTO TUNNELS
 			//CAN MAKE THE GAME EASIER/HARDER BY CHANGING THESE VALUES, ALTERING THE SIZE OF THE BOUNDS, WHILE PAC-MAN STAYS THE SAME SIZE?
+			this.bounds.w = this.radius * 2 - 2;
+			this.bounds.h = this.radius * 2 - 2;
+
+			switch(this.facing){
+				case UP: 
+					this.bounds.y = this.bounds.y - speed;
+				break;
+				case RIGHT:
+					this.bounds.w = this.bounds.w + speed;
+				break;
+				case DOWN:
+					this.bounds.h = this.bounds.h + speed;
+				break;
+				case LEFT:
+					this.bounds.x = this.bounds.x - speed;
+				break;
+			}
+			//DEBUG
+			//console.log('this.x: ' + x + ', this.y: ' + y + ', bounds.x: ' + this.bounds.x + ', bounds.y: ' + this.bounds.y + ', bounds.w: ' + this.bounds.w + ', bounds.h: ' + this.bounds.h);
+			
+		},
+		intersects: function(rect){
+			return !( rect.x > (this.bounds.x + this.bounds.w) || (rect.x + rect.w) < this.bounds.x || rect.y > (this.bounds.y + this.bounds.h) || (rect.y + rect.h) < this.bounds.y);
+		}
+	};
+	
+	var blinky = {
+		x: 182,
+		y: 221,
+		radius: 10,
+		//BOUNDS HAVE DEFAULT VALUES WHICH WILL BE OVERWRITTEN AS SOON AS updatePosition IS CALLED
+		bounds: {x: 182, y: 221, w: 2, h: 2},
+		phase: 0,
+		facing: UP,
+		updatePosition: function(x, y){
+			this.x = x;
+			this.y = y;
+			this.bounds.x = x - this.radius + 1;
+			this.bounds.y = y - this.radius + 1;
 			this.bounds.w = this.radius * 2 - 2;
 			this.bounds.h = this.radius * 2 - 2;
 
@@ -228,6 +266,11 @@
 		//DRAW PAC-MAN
 		drawPacman();
 		
+		//MOVE GHOSTS
+		moveGhosts();
+		//DRAW GHOSTS
+		drawGhosts();
+		
 		//--
 		
 		//UPDATE PAC-MANS DIRECTION
@@ -236,11 +279,12 @@
 		//--
 		
 		//UPDATE PAC-MANS LOCATION
+		//to-do- some way of 'nudging' pacman a pixel in any direction if he has only hit a wall by a pixel or two. 
+		//So that instead of getting stuck on a corner, the game nudges him in to the tunnel. 
+		//will the intersect return a value, and if that value is right on a corner I can do the nudge?
 		collided = false;
 		switch(pacman.facing){
 			case UP:
-				//these distances to stop pacman going off the canvas seem wierd
-				//hes got a radius of 20, and is drawn from his centre point, so why do i need more than 20 pixels to stop him going off the canvas?
 
 				//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
 				pacman.bounds.y = pacman.bounds.y - speed;
@@ -379,6 +423,94 @@
 			plane.stroke();
 		}
 	}
+		
+	function drawGhosts(){
+		plane.beginPath();
+		plane.arc(blinky.x, blinky.y, blinky.radius, 0, 2 * Math.PI); 
+		plane.fillStyle = '#FF0000';
+		plane.fill();
+		
+		//DEBUG - DRAW BOUNDS
+		if(drawBounds){
+			plane.rect(blinky.bounds.x, blinky.bounds.y, blinky.bounds.w, blinky.bounds.h);
+			plane.fillStyle = '#EEE';
+			plane.stroke();
+		}
+	}
+	
+	function moveGhosts(){
+	
+		collidedWalls = [];
+		
+		//SWITCH GHOST FACING
+		switch(blinky.facing){
+			case UP:
+				//possible directions up, right, left
+				//check if any direction will collide
+				//this doesn't work? should end up with allowed directions being left or right??
+				possibleDirections = [UP, RIGHT, LEFT];
+				//ITERATE ALL WALLS
+				for(i = 0; i < walls.length; i++){
+					
+					for(j = 0; j < possibleDirections.length; j++){
+						switch(possibleDirections){ 
+							case UP:
+								//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
+								blinky.bounds.y = blinky.bounds.y - speed;
+								//CHECKS THE BOUNDS AGAINST THE WALL
+								if(blinky.intersects(walls[i])){
+									//SET FLAG
+									collidedWalls.push(possibleDirections[j]);
+									//NO NEED TO CHECK FURTHER WALLS
+									continue;
+								}
+								blinky.bounds.y = blinky.bounds.y + speed;
+							break;
+							case RIGHT:
+								//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
+								blinky.bounds.w = blinky.bounds.w + speed;
+								//CHECKS THE BOUNDS AGAINST THE WALL
+								if(blinky.intersects(walls[i])){
+									//SET FLAG
+									collidedWalls.push(possibleDirections[j]);
+									//NO NEED TO CHECK FURTHER WALLS
+									continue;
+								}
+								blinky.bounds.w = blinky.bounds.w - speed;
+							break;
+							case LEFT:
+								//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
+								blinky.bounds.x = blinky.bounds.x - speed;
+								//CHECKS THE BOUNDS AGAINST THE WALL
+								if(blinky.intersects(walls[i])){
+									//SET FLAG
+									collidedWalls.push(possibleDirections[j]);
+									//NO NEED TO CHECK FURTHER WALLS
+									continue;
+								}
+								blinky.bounds.x = blinky.bounds.x + speed;
+							break;
+						}
+					}
+				}
+				
+				console.log(collidedWalls);
+				
+			break;
+			case RIGHT:
+			
+			break;
+			case DOWN:
+			
+			break;
+			case LEFT:
+			
+			break;
+		}
+		//blinky.updatePosition(blinky.x + speed, blinky.y);
+	
+	}
+
 	
 	//--
 	
@@ -396,6 +528,7 @@
 			case 'slow':
 				repeater = setInterval(draw, 200);
 			break;
+			0 
 			case 'medium':
 				repeater = setInterval(draw, 100);
 			break;
@@ -408,6 +541,8 @@
 		}
 	}
 	
+	//debug, just move blinky once 
+	blinky.updatePosition(blinky.x + speed, blinky.y);
 
 	
 	//--
