@@ -17,6 +17,7 @@
 	</div>
 	<button onclick="startGame()">Start</button>
 	<button onclick="setFrameRate('pause')">Pause</button>
+	<button onclick="draw()">Single Frame</button>
 </body>
 
 <script>
@@ -26,10 +27,12 @@
 	const RIGHT = 1;
 	const DOWN = 2;
 	const LEFT = 3;
+	const directions = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
 	
 	//DEBUG OPTIONS
 	var drawBounds = true;
 	var showCoords = false;
+	var showGhostAllowedDirections = false;
 	
 	//CANVAS
 	let canvas = document.getElementById('game');
@@ -49,7 +52,7 @@
 	//x, y, width, height
 	walls.push({x:0,y:0,w:494,h:26});
 	walls.push({x:0,y:26,w:26,h:182});
-	walls.push({x:468,y:26,w:50,h:182});
+	walls.push({x:468,y:26,w:52,h:182});
 	walls.push({x:52,y:52,w:52,h:52});
 	walls.push({x:130,y:52,w:78,h:52});
 	walls.push({x:234,y:26,w:26,h:78});
@@ -61,6 +64,7 @@
 	walls.push({x:338,y:130,w:26,h:130});
 	walls.push({x:390,y:130,w:52,h:26});
 	walls.push({x:234,y:156,w:26,h:52});
+	//
 	walls.push({x:156,y:182,w:52,h:26});
 	walls.push({x:286,y:182,w:52,h:26});
 	walls.push({x:26,y:182,w:78,h:26});
@@ -106,6 +110,7 @@
 		//BOUNDS HAVE DEFAULT VALUES WHICH WILL BE OVERWRITTEN AS SOON AS updatePosition IS CALLED
 		bounds: {x: 30, y: 30, w: 2, h: 2},
 		phase: 0,
+		speed: 5,
 		facing: direction,
 		updatePosition: function(x, y){
 			this.x = x;
@@ -145,18 +150,25 @@
 		y: 221,
 		radius: 10,
 		//BOUNDS HAVE DEFAULT VALUES WHICH WILL BE OVERWRITTEN AS SOON AS updatePosition IS CALLED
-		bounds: {x: 182, y: 221, w: 2, h: 2},
+		bounds: {x: 182, y: 221, w: 18, h: 18},
 		phase: 0,
-		facing: UP,
+		speed: 4,
+		facing: RIGHT,
 		updatePosition: function(x, y){
 			this.x = x;
 			this.y = y;
-			this.bounds.x = x - this.radius + 1;
+			//these are pac-mans slightly smaller bounds, but can cause blinky to get stuck in a circle if the space between 
+			// walls is too wide?
+			/*this.bounds.x = x - this.radius + 1;
 			this.bounds.y = y - this.radius + 1;
 			this.bounds.w = this.radius * 2 - 2;
-			this.bounds.h = this.radius * 2 - 2;
+			this.bounds.h = this.radius * 2 - 2;*/
+			this.bounds.x = x - this.radius;
+			this.bounds.y = y - this.radius;
+			this.bounds.w = this.radius * 2;
+			this.bounds.h = this.radius * 2;
 
-			switch(this.facing){
+			/*switch(this.facing){
 				case UP: 
 					this.bounds.y = this.bounds.y - speed;
 				break;
@@ -169,7 +181,7 @@
 				case LEFT:
 					this.bounds.x = this.bounds.x - speed;
 				break;
-			}
+			}*/
 			//DEBUG
 			//console.log('this.x: ' + x + ', this.y: ' + y + ', bounds.x: ' + this.bounds.x + ', bounds.y: ' + this.bounds.y + ', bounds.w: ' + this.bounds.w + ', bounds.h: ' + this.bounds.h);
 			
@@ -189,44 +201,44 @@
 			case 'KeyW':
 			case 'ArrowUp':
 				//CHECK FOR COLLISION
-				pacman.bounds.y = pacman.bounds.y - speed;
+				pacman.bounds.y = pacman.bounds.y - pacman.speed;
 				for(i = 0; i < walls.length; i++){
 					if(!pacman.intersects(walls[i])){
 						direction = UP;
 					}
 				}
 				//RESET BOUNDS
-				pacman.bounds.y = pacman.bounds.y + speed;
+				pacman.bounds.y = pacman.bounds.y + pacman.speed;
 			break;
 			case 'KeyD':
 			case 'ArrowRight':
-				pacman.bounds.w = pacman.bounds.w + speed;
+				pacman.bounds.w = pacman.bounds.w + pacman.speed;
 				for(i = 0; i < walls.length; i++){
 					if(!pacman.intersects(walls[i])){
 						direction = RIGHT;
 					}
 				}
-				pacman.bounds.w = pacman.bounds.w - speed;
+				pacman.bounds.w = pacman.bounds.w - pacman.speed;
 			break;
 			case 'KeyS':
 			case 'ArrowDown':
-				pacman.bounds.h = pacman.bounds.h + speed;
+				pacman.bounds.h = pacman.bounds.h + pacman.speed;
 				for(i = 0; i < walls.length; i++){
 					if(!pacman.intersects(walls[i])){
 						direction = DOWN;
 					}
 				}
-				pacman.bounds.h = pacman.bounds.h - speed;
+				pacman.bounds.h = pacman.bounds.h - pacman.speed;
 			break;
 			case 'KeyA':
 			case 'ArrowLeft':
-				pacman.bounds.x = pacman.bounds.x - speed;
+				pacman.bounds.x = pacman.bounds.x - pacman.speed;
 				for(i = 0; i < walls.length; i++){
 					if(!pacman.intersects(walls[i])){
 						direction = LEFT;
 					}
 				}
-				pacman.bounds.x = pacman.bounds.x + speed;
+				pacman.bounds.x = pacman.bounds.x + pacman.speed;
 			break;
 			case 'Space':
 				setFrameRate('pause');
@@ -281,15 +293,13 @@
 		//UPDATE PAC-MANS LOCATION
 		//to-do- some way of 'nudging' pacman a pixel in any direction if he has only hit a wall by a pixel or two. 
 		//So that instead of getting stuck on a corner, the game nudges him in to the tunnel. 
-		//will the intersect return a value, and if that value is right on a corner I can do the nudge?
+		//will the intersect return a value, and if that value is right on a corner I can do the nudge? But then define 'corner'
 		collided = false;
 		switch(pacman.facing){
 			case UP:
-
 				//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
-				pacman.bounds.y = pacman.bounds.y - speed;
+				pacman.bounds.y = pacman.bounds.y - pacman.speed;
 				//ITERATE ALL WALLS
-				//potential optimization here - only look at walls with an open face in the direction pac-man is facing?
 				for(i = 0; i < walls.length; i++){
 					//CHECKS THE BOUNDS AGAINST THE WALL
 					if(pacman.intersects(walls[i])){
@@ -302,13 +312,13 @@
 				//CHECK FLAG
 				if(!collided){
 					//NO COLLISION - UPDATE PAC-MANS POSITION
-					pacman.updatePosition(pacman.x, pacman.y - speed);
+					pacman.updatePosition(pacman.x, pacman.y - pacman.speed);
 				}
 				//RESET BOUNDS
-				pacman.bounds.y = pacman.bounds.y + speed;
+				pacman.bounds.y = pacman.bounds.y + pacman.speed;
 			break;
 			case RIGHT:
-				pacman.bounds.w = pacman.bounds.w + speed;
+				pacman.bounds.w = pacman.bounds.w + pacman.speed;
 				for(i = 0; i < walls.length; i++){
 					if(pacman.intersects(walls[i])){
 						collided = true;
@@ -316,12 +326,12 @@
 					}
 				}
 				if(!collided){
-					pacman.updatePosition(pacman.x + speed, pacman.y);
+					pacman.updatePosition(pacman.x + pacman.speed, pacman.y);
 				}
-				pacman.bounds.w = pacman.bounds.w - speed;
+				pacman.bounds.w = pacman.bounds.w - pacman.speed;
 			break;
 			case DOWN:
-				pacman.bounds.h = pacman.bounds.h + speed;
+				pacman.bounds.h = pacman.bounds.h + pacman.speed;
 				for(i = 0; i < walls.length; i++){
 					if(pacman.intersects(walls[i])){
 						collided = true;
@@ -329,12 +339,12 @@
 					}
 				}
 				if(!collided){
-					pacman.updatePosition(pacman.x, pacman.y + speed);
+					pacman.updatePosition(pacman.x, pacman.y + pacman.speed);
 				}
-				pacman.bounds.h = pacman.bounds.h - speed;
+				pacman.bounds.h = pacman.bounds.h - pacman.speed;
 			break;
 			case LEFT:
-				pacman.bounds.x = pacman.bounds.x - speed;
+				pacman.bounds.x = pacman.bounds.x - pacman.speed;
 				for(i = 0; i < walls.length; i++){
 					if(pacman.intersects(walls[i])){
 						collided = true;
@@ -342,13 +352,13 @@
 					}
 				}
 				if(!collided){
-					pacman.updatePosition(pacman.x - speed, pacman.y);
+					pacman.updatePosition(pacman.x - pacman.speed, pacman.y);
 				}
-				pacman.bounds.x = pacman.bounds.x + speed;
+				pacman.bounds.x = pacman.bounds.x + pacman.speed;
 			break;
 		}
 		
-		//UPDATE PAC-MANS PHASE ('MOUTH')
+		//UPDATE PAC-MANS PHASE ('ANIMATION')
 		if(pacman.phase == 3){
 			pacman.phase = 0;
 		}else{
@@ -441,73 +451,109 @@
 	function moveGhosts(){
 	
 		collidedWalls = [];
+		allowedDirections = [UP, RIGHT, DOWN, LEFT];
 		
-		//SWITCH GHOST FACING
+		//REMOVE FROM ALLOWED DIRECTIONS
+		/*console.log(allowedDirections);
+		allowedDirections = allowedDirections.filter(function(e) { return e != RIGHT });
+		console.log(allowedDirections);*/
+		
+		//SET POSSIBLE DIRECTIONS - GHOSTS CANNOT TURN AROUND
 		switch(blinky.facing){
 			case UP:
-				//possible directions up, right, left
-				//check if any direction will collide
-				//this doesn't work? should end up with allowed directions being left or right??
-				possibleDirections = [UP, RIGHT, LEFT];
-				//ITERATE ALL WALLS
-				for(i = 0; i < walls.length; i++){
-					
-					for(j = 0; j < possibleDirections.length; j++){
-						switch(possibleDirections){ 
-							case UP:
-								//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
-								blinky.bounds.y = blinky.bounds.y - speed;
-								//CHECKS THE BOUNDS AGAINST THE WALL
-								if(blinky.intersects(walls[i])){
-									//SET FLAG
-									collidedWalls.push(possibleDirections[j]);
-									//NO NEED TO CHECK FURTHER WALLS
-									continue;
-								}
-								blinky.bounds.y = blinky.bounds.y + speed;
-							break;
-							case RIGHT:
-								//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
-								blinky.bounds.w = blinky.bounds.w + speed;
-								//CHECKS THE BOUNDS AGAINST THE WALL
-								if(blinky.intersects(walls[i])){
-									//SET FLAG
-									collidedWalls.push(possibleDirections[j]);
-									//NO NEED TO CHECK FURTHER WALLS
-									continue;
-								}
-								blinky.bounds.w = blinky.bounds.w - speed;
-							break;
-							case LEFT:
-								//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
-								blinky.bounds.x = blinky.bounds.x - speed;
-								//CHECKS THE BOUNDS AGAINST THE WALL
-								if(blinky.intersects(walls[i])){
-									//SET FLAG
-									collidedWalls.push(possibleDirections[j]);
-									//NO NEED TO CHECK FURTHER WALLS
-									continue;
-								}
-								blinky.bounds.x = blinky.bounds.x + speed;
-							break;
-						}
-					}
-				}
-				
-				console.log(collidedWalls);
-				
-			break;
-			case RIGHT:
-			
-			break;
-			case DOWN:
-			
+				skip = DOWN;
 			break;
 			case LEFT:
-			
+				skip = RIGHT;
+			break;
+			case DOWN:
+				skip = UP;
+			break;
+			case RIGHT:
+				skip = LEFT;
 			break;
 		}
-		//blinky.updatePosition(blinky.x + speed, blinky.y);
+
+		//ITERATE ALL DIRECTIONS
+		for(pd = 0; pd < directions.length; pd++){
+			//CHECK DIRECTION
+			if(pd == skip){
+				//REMOVE FROM ALLOWED DIRECTIONS
+				allowedDirections = allowedDirections.filter(function(e) { return e != pd });
+				//SKIP 'REVERSE' DIRECTION
+				continue;
+			}			
+			
+			//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
+			if(pd == UP){
+				blinky.bounds.y = blinky.bounds.y - blinky.speed;
+			}
+			if(pd == RIGHT){
+				blinky.bounds.w = blinky.bounds.w + blinky.speed;
+			}
+			if(pd == DOWN){
+				blinky.bounds.h = blinky.bounds.h + blinky.speed;
+			}
+			if(pd == LEFT){
+				blinky.bounds.x = blinky.bounds.x - blinky.speed;
+			}
+			//CHECK WALLS
+			for(w = 0; w < walls.length; w++){
+				//CHECKS THE BOUNDS AGAINST THE WALL
+				if(blinky.intersects(walls[w])){
+					//DEBUG
+					//console.log('blinky ' + directions[pd] + ' check intersected wall ' + w + ' at ' + walls[w]);
+					//REMOVE FROM ALLOWED DIRECTIONS
+					allowedDirections = allowedDirections.filter(function(e) { return e != pd });
+					//NO NEED TO CHECK FURTHER WALLS
+					break;
+				}
+			}
+			//RESET BOUNDS
+			if(pd == UP){
+				blinky.bounds.y = blinky.bounds.y + blinky.speed;
+			}
+			if(pd == RIGHT){
+				blinky.bounds.w = blinky.bounds.w - blinky.speed;
+			}
+			if(pd == DOWN){
+				blinky.bounds.h = blinky.bounds.h - blinky.speed;
+			}
+			if(pd == LEFT){
+				blinky.bounds.x = blinky.bounds.x + blinky.speed;
+			}	
+		}
+		
+		//DEBUG - SHOWS 
+		if(showGhostAllowedDirections){
+			console.log('Blinkys allowed directions:');
+			console.log(allowedDirections);
+		}
+		
+
+		//this should just make him travel in a straight line, and pick a random direction when he can't
+		if(!allowedDirections.includes(blinky.facing)){
+			blinky.facing = allowedDirections[Math.floor(Math.random() * allowedDirections.length)];
+		}
+		switch(blinky.facing){
+			case UP:
+				blinky.updatePosition(blinky.x, blinky.y - blinky.speed);
+				blinky.facing = UP;
+			break;
+			case RIGHT:
+				blinky.updatePosition(blinky.x + blinky.speed, blinky.y);
+				blinky.facing = RIGHT;
+			break;
+			case DOWN:
+				blinky.updatePosition(blinky.x, blinky.y + blinky.speed);
+				blinky.facing = DOWN;
+			break;
+			case LEFT:
+				blinky.updatePosition(blinky.x - blinky.speed, blinky.y);
+				blinky.facing = LEFT;
+			break;
+		}
+		
 	
 	}
 
