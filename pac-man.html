@@ -21,6 +21,8 @@
 </body>
 
 <script>
+
+	//BUG IN GHOST MOVEMENT - while it works most of the time, sometimes the ghost phases through walls and will continue through the wall until it hits another junction
 	
 	//SET DIRECTION CONSTANTS
 	const UP = 0;
@@ -32,7 +34,7 @@
 	//DEBUG OPTIONS
 	var drawBounds = true;
 	var showCoords = false;
-	var showGhostAllowedDirections = false;
+	var showGhostAllowedDirections = true;
 	
 	//CANVAS
 	let canvas = document.getElementById('game');
@@ -153,6 +155,7 @@
 		bounds: {x: 182, y: 221, w: 18, h: 18},
 		phase: 0,
 		speed: 4,
+		ai: 'chaser',
 		facing: RIGHT,
 		updatePosition: function(x, y){
 			this.x = x;
@@ -450,13 +453,9 @@
 	
 	function moveGhosts(){
 	
-		collidedWalls = [];
-		allowedDirections = [UP, RIGHT, DOWN, LEFT];
-		
-		//REMOVE FROM ALLOWED DIRECTIONS
-		/*console.log(allowedDirections);
-		allowedDirections = allowedDirections.filter(function(e) { return e != RIGHT });
-		console.log(allowedDirections);*/
+		//INIT VALUES
+		let collidedWalls = [];
+		let allowedDirections = [UP, RIGHT, DOWN, LEFT];
 		
 		//SET POSSIBLE DIRECTIONS - GHOSTS CANNOT TURN AROUND
 		switch(blinky.facing){
@@ -524,17 +523,74 @@
 			}	
 		}
 		
-		//DEBUG - SHOWS 
+		//DEBUG - SHOWS WHICH DIRECTIONS THE GHOST IS ALLOWED TO TRAVEL
 		if(showGhostAllowedDirections){
 			console.log('Blinkys allowed directions:');
 			console.log(allowedDirections);
+			if(allowedDirections.length == 0){
+				console.log('GHOST STUCK!');
+			}
 		}
 		
+		//GHOST IS TO CONTINUE IN THE SAME DIRECTION
+		directionTo = blinky.facing;
+		//DO I NEED A CHECK HERE - IF THE GHOST CAN'T CONTINUE MOVING IN THE SAME DIRECTION, TURN AROUND?
+		
+		//INIT SHORTEST DIRECTION, SET TO IMPOSSIBLY LARGE DISTANCE
+		shortestDistance = 1000;
+		
+		//ONLY RUN DECISION MAKING IF THERE IS A CHOICE OF DIRECTIONS
+		if(allowedDirections.length > 1){
+			//CHANGE BASED ON GHOST AI
+			switch(blinky.ai){
+				//ALWAYS TAKE THE SHORTEST PATH TO WHERE PAC-MAN IS
+				case 'chaser':
+					for(ad = 0; ad < allowedDirections.length; ad++){
+						switch(allowedDirections[ad]){
+							case UP:
+								len = getLength(blinky.x, blinky.y - blinky.radius, pacman.x, pacman.y);
+								if(len < shortestDistance){
+									directionTo = UP;
+									shortestDistance = len;
+								}
+							break;
+							case RIGHT:
+								len = getLength(blinky.x + blinky.radius, blinky.y, pacman.x, pacman.y);
+								if(len < shortestDistance){
+									directionTo = RIGHT;
+									shortestDistance = len;
+								}
+							break;
+							case DOWN:
+								len = getLength(blinky.x, blinky.y + blinky.radius, pacman.x, pacman.y);
+								if(len < shortestDistance){
+									directionTo = DOWN;
+									shortestDistance = len;
+								}
+							break;
+							case LEFT:
+								len = getLength(blinky.x - blinky.radius, blinky.y, pacman.x, pacman.y);
+								if(len < shortestDistance){
+									directionTo = LEFT;
+									shortestDistance = len;
+								}
+							break;
+						}
+					}
+					
+				break;
+			}
+		}
+		
+		//SET FACING
+		blinky.facing = directionTo;
 
 		//this should just make him travel in a straight line, and pick a random direction when he can't
-		if(!allowedDirections.includes(blinky.facing)){
-			blinky.facing = allowedDirections[Math.floor(Math.random() * allowedDirections.length)];
-		}
+		//if(!allowedDirections.includes(blinky.facing)){
+			//blinky.facing = allowedDirections[Math.floor(Math.random() * allowedDirections.length)];
+		//}
+		
+		//MOVE GHOST
 		switch(blinky.facing){
 			case UP:
 				blinky.updatePosition(blinky.x, blinky.y - blinky.speed);
@@ -555,6 +611,17 @@
 		}
 		
 	
+	}
+	
+	//--
+	
+	function getLength(p1x, p1y, p2x, p2y)
+	{
+		var x = p2x - p1x;
+		x = x * x;
+		var y = p2y - p1y;
+		y = y * y;
+		return Math.sqrt(x + y);
 	}
 
 	
