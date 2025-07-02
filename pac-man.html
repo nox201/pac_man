@@ -31,7 +31,7 @@
 	
 	//DEBUG OPTIONS
 	var drawBounds = true;
-	var showCoords = false;
+	var showCoords = true;
 	var showGhostAllowedDirections = true;
 	
 	//CANVAS
@@ -115,12 +115,12 @@
 		updatePosition: function(x, y){
 			this.x = x;
 			this.y = y;
-			this.bounds.x = x - this.radius + 1;
-			this.bounds.y = y - this.radius + 1;
+			this.bounds.x = x - this.radius;
+			this.bounds.y = y - this.radius;
 			//MINUS 1 TO THE BOUNDS ALLOWS FOR EASIER MOVEMENT, PAC-MAN DOESN'T NEED PERFECT INPUTS TO GET INTO TUNNELS
 			//CAN MAKE THE GAME EASIER/HARDER BY CHANGING THESE VALUES, ALTERING THE SIZE OF THE BOUNDS, WHILE PAC-MAN STAYS THE SAME SIZE?
-			this.bounds.w = this.radius * 2 - 2;
-			this.bounds.h = this.radius * 2 - 2;
+			this.bounds.w = this.radius * 2;
+			this.bounds.h = this.radius * 2;
 
 			switch(this.facing){
 				case UP: 
@@ -177,29 +177,41 @@
 		}
 	};
 	
-	var blinky = {
-		x: 182,
-		y: 221,
-		radius: 10,
-		//BOUNDS HAVE DEFAULT VALUES WHICH WILL BE OVERWRITTEN AS SOON AS updatePosition IS CALLED
-		bounds: {x: 182, y: 221, w: 18, h: 18},
-		phase: 0,
-		speed: 4,
-		ai: 'chaser',
-		facing: RIGHT,
-		updatePosition: function(x, y){
+	class Sprite {
+		constructor(name, colour, x, y, radius, speed, ai, facing){
+			this.name = name;
+			this.colour = colour;
 			this.x = x;
 			this.y = y;
-			//these bounds are the same size as blinky, but cause him to spin in circles in some gaps :/
+			this.radius = radius;
+			this.speed = speed;
+			this.ai = ai;
+			this.facing = facing;
+		};
+		name = 'default';
+		colour = '#FF0000';
+		x = 182;
+		y = 221;
+		radius = 10;
+		//BOUNDS HAVE DEFAULT VALUES WHICH WILL BE OVERWRITTEN AS SOON AS updatePosition IS CALLED
+		bounds = {x: 182, y: 221, w: 18, h: 18};
+		phase = 0;
+		speed = 4;
+		ai = 'chaser';
+		facing = RIGHT;
+		updatePosition = function(x, y){
+			this.x = x;
+			this.y = y;
+			//add + 1 to the w and h properties prevents a sprite spinning in the corridors, as its exactly the right size for my 26 pixel wide corridors
 			this.bounds.x = x - this.radius;
 			this.bounds.y = y - this.radius;
-			this.bounds.w = this.radius * 2;
-			this.bounds.h = this.radius * 2;
-		},
-		intersects: function(rect){
+			this.bounds.w = this.radius * 2 + 1;
+			this.bounds.h = this.radius * 2 + 1;
+		};
+		intersects = function(rect){
 			return !( rect.x > (this.bounds.x + this.bounds.w) || (rect.x + rect.w) < this.bounds.x || rect.y > (this.bounds.y + this.bounds.h) || (rect.y + rect.h) < this.bounds.y);
-		},
-		setBounds: function(boundsDirection){
+		};
+		setBounds = function(boundsDirection){
 			switch(boundsDirection){
 				case UP:
 					this.bounds.y = this.bounds.y - this.speed;
@@ -214,8 +226,8 @@
 					this.bounds.x = this.bounds.x - this.speed;
 				break;
 			}
-		},
-		resetBounds: function(boundsDirection){
+		};
+		resetBounds = function(boundsDirection){
 			switch(boundsDirection){
 				case UP:
 					this.bounds.y = this.bounds.y + this.speed;
@@ -233,7 +245,17 @@
 		}
 	};
 	
+	//CREATE GHOSTS
+	var ghosts = []
+	ghosts.push(new Sprite('blinky', '#FF0000', 182, 221, 10, 4, 'chaser', RIGHT));
+	ghosts.push(new Sprite('pinky', '#fc9ff9', 182, 256, 10, 4, 'chaser', LEFT));
+	ghosts.push(new Sprite('inky', '#00fff2', 182, 272, 10, 4, 'chaser', LEFT));
+	ghosts.push(new Sprite('clyde', '#fcba03', 182, 221, 10, 4, 'chaser', LEFT));
+	
+	
 	//ADD KEY EVENT LISTENERS
+	//to-do - the collision check doesn't seem to work! I want it to ignore a button press if pac-man can't move
+	//this will allow the player to hold a key down prior to a corner and prevent annoying getting stuck on corners
 	document.addEventListener("keydown", changeDirection);
 	function changeDirection(e){
 		//SWITCH INPUT
@@ -317,10 +339,7 @@
 		//DRAW THE WALLS
 		drawWalls();
 		
-		//UPDATE PAC-MANS LOCATION
-		//to-do- some way of 'nudging' pacman a pixel in any direction if he has only hit a wall by a pixel or two. 
-		//So that instead of getting stuck on a corner, the game nudges him in to the tunnel. 
-		//will the intersect return a value, and if that value is right on a corner I can do the nudge? But then define 'corner'
+		//MOVE PAC-MAN
 		movePacman();
 		//DRAW PAC-MAN
 		drawPacman();
@@ -415,11 +434,6 @@
 	
 	function movePacman(){
 		
-		//UPDATE PAC-MANS LOCATION
-		//to-do- some way of 'nudging' pacman a pixel in any direction if he has only hit a wall by a pixel or two. 
-		//So that instead of getting stuck on a corner, the game nudges him in to the tunnel. 
-		//will the intersect return a value, and if that value is right on a corner I can do the nudge? But then define 'corner'
-		
 		//SET FLAG
 		collided = false;
 		
@@ -456,171 +470,179 @@
 		//RESET BOUNDS
 		pacman.resetBounds(pacman.facing);
 		
-		
 	}
 	
 	//--
 		
 	function drawGhosts(){
-		plane.beginPath();
-		plane.arc(blinky.x, blinky.y, blinky.radius, 0, 2 * Math.PI); 
-		plane.fillStyle = '#FF0000';
-		plane.fill();
-		
-		//DEBUG - DRAW BOUNDS
-		if(drawBounds){
-			plane.rect(blinky.bounds.x, blinky.bounds.y, blinky.bounds.w, blinky.bounds.h);
-			plane.fillStyle = '#EEE';
-			plane.stroke();
+		//ITERATE GHOSTS
+		for(i = 0; i < ghosts.length; i++){
+			//TO-DO - ghosts phases
+			plane.beginPath();
+			plane.arc(ghosts[i].x, ghosts[i].y, ghosts[i].radius, 0, 2 * Math.PI); 
+			plane.fillStyle = ghosts[i].colour;
+			plane.fill();
+			
+			//DEBUG - DRAW BOUNDS
+			if(drawBounds){
+				plane.rect(ghosts[i].bounds.x, ghosts[i].bounds.y, ghosts[i].bounds.w, ghosts[i].bounds.h);
+				plane.fillStyle = '#EEE';
+				plane.stroke();
+			}
 		}
 	}
 	
 	//--
 	
 	function moveGhosts(){
+		//ITERATE GHOSTS
+		for(i = 0; i < ghosts.length; i++){
 	
-		//INIT VALUES
-		let collidedWalls = [];
-		let allowedDirections = [UP, RIGHT, DOWN, LEFT];
-		let skip;
-		
-		//SET POSSIBLE DIRECTIONS - GHOSTS CANNOT TURN AROUND
-		switch(blinky.facing){
-			case UP:
-				skip = DOWN;
-			break;
-			case LEFT:
-				skip = RIGHT;
-			break;
-			case DOWN:
-				skip = UP;
-			break;
-			case RIGHT:
-				skip = LEFT;
-			break;
-		}
+			//INIT VALUES
+			let collidedWalls = [];
+			let allowedDirections = [UP, RIGHT, DOWN, LEFT];
+			let skip;
+			
+			//SET POSSIBLE DIRECTIONS - GHOSTS CANNOT TURN AROUND
+			switch(ghosts[i].facing){
+				case UP:
+					skip = DOWN;
+				break;
+				case LEFT:
+					skip = RIGHT;
+				break;
+				case DOWN:
+					skip = UP;
+				break;
+				case RIGHT:
+					skip = LEFT;
+				break;
+			}
 
-		//ITERATE ALL DIRECTIONS
-		for(pd = 0; pd < directions.length; pd++){
-			//CHECK DIRECTION
-			if(pd == skip){
-				//REMOVE FROM ALLOWED DIRECTIONS
-				allowedDirections = allowedDirections.filter(function(e) { return e != pd });
-				//SKIP 'REVERSE' DIRECTION
-				continue;
-			}			
-			
-			//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
-			blinky.setBounds(pd);
-			
-			//CHECK WALLS
-			for(w = 0; w < walls.length; w++){
-				//CHECKS THE BOUNDS AGAINST THE WALL
-				if(blinky.intersects(walls[w])){
-					//DEBUG
-					//console.log('blinky ' + directions[pd] + ' check intersected wall ' + w + ' at ' + walls[w]);
+			//ITERATE ALL DIRECTIONS
+			for(pd = 0; pd < directions.length; pd++){
+				//CHECK DIRECTION
+				if(pd == skip){
 					//REMOVE FROM ALLOWED DIRECTIONS
 					allowedDirections = allowedDirections.filter(function(e) { return e != pd });
-					//NO NEED TO CHECK FURTHER WALLS
-					break;
-				}
-			}
-			//RESET BOUNDS
-			blinky.resetBounds(pd);
-		}
-		
-		//DEBUG - SHOWS WHICH DIRECTIONS THE GHOST IS ALLOWED TO TRAVEL
-		if(showGhostAllowedDirections){
-			console.log('Blinkys allowed directions:');
-			console.log(allowedDirections);
-			if(allowedDirections.length == 0){
-				console.log('GHOST STUCK!');
-			}
-		}
-		
-		//GHOST IS TO CONTINUE IN THE SAME DIRECTION
-		directionTo = blinky.facing;
-		
-		//INIT SHORTEST DIRECTION, SET TO IMPOSSIBLY LARGE DISTANCE
-		shortestDistance = 1000;
-		
-		//ONLY RUN DECISION MAKING IF THERE IS A CHOICE OF DIRECTIONS
-		//this has been commented as it causes an issue in right angles - allowedDirections still only has one option, but its
-		//changed from the direction blinky is facing, however I don't run the ai, causing blinky to continue travelling
-		//straight when he hits a right angle. But this could be a possible optimization if i get performance issues
-		//if(allowedDirections.length > 1){
-		//CHANGE BASED ON GHOST AI
-		switch(blinky.ai){
-			//ALWAYS TAKE THE SHORTEST PATH TO WHERE PAC-MAN IS
-			case 'chaser':
-				for(ad = 0; ad < allowedDirections.length; ad++){
-					switch(allowedDirections[ad]){
-						case UP:
-							len = getLength(blinky.x, blinky.y - blinky.radius, pacman.x, pacman.y);
-							if(len < shortestDistance){
-								directionTo = UP;
-								shortestDistance = len;
-							}
-						break;
-						case RIGHT:
-							len = getLength(blinky.x + blinky.radius, blinky.y, pacman.x, pacman.y);
-							if(len < shortestDistance){
-								directionTo = RIGHT;
-								shortestDistance = len;
-							}
-						break;
-						case DOWN:
-							len = getLength(blinky.x, blinky.y + blinky.radius, pacman.x, pacman.y);
-							if(len < shortestDistance){
-								directionTo = DOWN;
-								shortestDistance = len;
-							}
-						break;
-						case LEFT:
-							len = getLength(blinky.x - blinky.radius, blinky.y, pacman.x, pacman.y);
-							if(len < shortestDistance){
-								directionTo = LEFT;
-								shortestDistance = len;
-							}
+					//SKIP 'REVERSE' DIRECTION
+					continue;
+				}			
+				
+				//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
+				ghosts[i].setBounds(pd);
+				
+				//CHECK WALLS
+				for(w = 0; w < walls.length; w++){
+					//CHECKS THE BOUNDS AGAINST THE WALL
+					if(ghosts[i].intersects(walls[w])){
+						//DEBUG
+						//console.log('ghost ' + directions[pd] + ' check intersected wall ' + w + ' at ' + walls[w]);
+						//REMOVE FROM ALLOWED DIRECTIONS
+						allowedDirections = allowedDirections.filter(function(e) { return e != pd });
+						//NO NEED TO CHECK FURTHER WALLS
 						break;
 					}
 				}
-				
-			break;
-		}
-		//}
-		
-		//SET FACING
-		blinky.facing = directionTo;
-		
-		//DEBUG - SHOWS WHICH DIRECTIONS THE GHOST IS ALLOWED TO TRAVEL
-		if(showGhostAllowedDirections){
-			console.log('Ghosts direction to is: ' + directions[directionTo]);
-		}
+				//RESET BOUNDS
+				ghosts[i].resetBounds(pd);
+			}
+			
+			//DEBUG - SHOWS WHICH DIRECTIONS THE GHOST IS ALLOWED TO TRAVEL
+			if(showGhostAllowedDirections){
+				console.log('ghosts allowed directions:');
+				console.log(allowedDirections);
+				if(allowedDirections.length == 0){
+					console.log('GHOST STUCK!');
+				}
+			}
+			
+			//GHOST IS TO CONTINUE IN THE SAME DIRECTION
+			directionTo = ghosts[i].facing;
+			
+			//INIT SHORTEST DIRECTION, SET TO IMPOSSIBLY LARGE DISTANCE
+			shortestDistance = 1000;
+			
+			//ONLY RUN DECISION MAKING IF THERE IS A CHOICE OF DIRECTIONS
+			//this has been commented as it causes an issue in right angles - allowedDirections still only has one option, but its
+			//changed from the direction the ghost is facing, however I don't run the ai, causing the ghost to continue travelling
+			//straight when he hits a right angle. But this could be a possible optimization if i get performance issues
+			//if(allowedDirections.length > 1){
+			//CHANGE BASED ON GHOST AI
+			switch(ghosts[i].ai){
+				//ALWAYS TAKE THE SHORTEST PATH TO WHERE PAC-MAN IS
+				case 'chaser':
+					for(ad = 0; ad < allowedDirections.length; ad++){
+						switch(allowedDirections[ad]){
+							case UP:
+								len = getLength(ghosts[i].x, ghosts[i].y - ghosts[i].radius, pacman.x, pacman.y);
+								if(len < shortestDistance){
+									directionTo = UP;
+									shortestDistance = len;
+								}
+							break;
+							case RIGHT:
+								len = getLength(ghosts[i].x + ghosts[i].radius, ghosts[i].y, pacman.x, pacman.y);
+								if(len < shortestDistance){
+									directionTo = RIGHT;
+									shortestDistance = len;
+								}
+							break;
+							case DOWN:
+								len = getLength(ghosts[i].x, ghosts[i].y + ghosts[i].radius, pacman.x, pacman.y);
+								if(len < shortestDistance){
+									directionTo = DOWN;
+									shortestDistance = len;
+								}
+							break;
+							case LEFT:
+								len = getLength(ghosts[i].x - ghosts[i].radius, ghosts[i].y, pacman.x, pacman.y);
+								if(len < shortestDistance){
+									directionTo = LEFT;
+									shortestDistance = len;
+								}
+							break;
+						}
+					}
+				break;
+				//to-do: 
+				//the other chaser ais - i've currently got just head to where pac man is, but i also need random, and the one two squares ahead of pac-man (ambush), and the two ahead and two to the side (flank?)
+			}
+			//}
+			
+			//SET FACING
+			ghosts[i].facing = directionTo;
+			
+			//DEBUG - SHOWS WHICH DIRECTIONS THE GHOST IS ALLOWED TO TRAVEL
+			if(showGhostAllowedDirections){
+				console.log('Ghosts direction to is: ' + directions[directionTo]);
+			}
 
-		//this should just make him travel in a straight line, and pick a random direction when he can't
-		//if(!allowedDirections.includes(blinky.facing)){
-			//blinky.facing = allowedDirections[Math.floor(Math.random() * allowedDirections.length)];
-		//}
+			//this should just make him travel in a straight line, and pick a random direction when he can't
+			//if(!allowedDirections.includes(ghosts[i].facing)){
+				//ghosts[i].facing = allowedDirections[Math.floor(Math.random() * allowedDirections.length)];
+			//}
+			
+			//MOVE GHOST
+			switch(ghosts[i].facing){
+				case UP:
+					ghosts[i].updatePosition(ghosts[i].x, ghosts[i].y - ghosts[i].speed);
+					ghosts[i].facing = UP;
+				break;
+				case RIGHT:
+					ghosts[i].updatePosition(ghosts[i].x + ghosts[i].speed, ghosts[i].y);
+					ghosts[i].facing = RIGHT;
+				break;
+				case DOWN:
+					ghosts[i].updatePosition(ghosts[i].x, ghosts[i].y + ghosts[i].speed);
+					ghosts[i].facing = DOWN;
+				break;
+				case LEFT:
+					ghosts[i].updatePosition(ghosts[i].x - ghosts[i].speed, ghosts[i].y);
+					ghosts[i].facing = LEFT;
+				break;
+			}
 		
-		//MOVE GHOST
-		switch(blinky.facing){
-			case UP:
-				blinky.updatePosition(blinky.x, blinky.y - blinky.speed);
-				blinky.facing = UP;
-			break;
-			case RIGHT:
-				blinky.updatePosition(blinky.x + blinky.speed, blinky.y);
-				blinky.facing = RIGHT;
-			break;
-			case DOWN:
-				blinky.updatePosition(blinky.x, blinky.y + blinky.speed);
-				blinky.facing = DOWN;
-			break;
-			case LEFT:
-				blinky.updatePosition(blinky.x - blinky.speed, blinky.y);
-				blinky.facing = LEFT;
-			break;
 		}
 		
 	
@@ -667,7 +689,7 @@
 	}
 	
 	//debug, just move blinky once 
-	blinky.updatePosition(blinky.x + speed, blinky.y);
+	//blinky.updatePosition(blinky.x + speed, blinky.y);
 
 	
 	//--
