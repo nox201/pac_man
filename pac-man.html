@@ -30,18 +30,19 @@
 	const directions = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
 	
 	//DEBUG OPTIONS
-	var drawBounds = true;
-	var showCoords = true;
-	var showGhostAllowedDirections = true;
+	var drawBounds = false;
+	var showCoords = false;
+	var showPacmanPosition = false;
+	var showGhostAllowedDirections = false;
 	
 	//CANVAS
 	let canvas = document.getElementById('game');
 	let plane = canvas.getContext("2d");
 	//GAME VARIABLES
 	let state = 'play';
-	var pixelSize = 20;
-	var width = canvas.width / pixelSize;
-	var height = canvas.height / pixelSize;
+	//var pixelSize = 20;
+	//var width = canvas.width / pixelSize;
+	//var height = canvas.height / pixelSize;
 	var score = 0;
 	var direction = RIGHT;
 	var existingDirection = RIGHT;
@@ -123,21 +124,34 @@
 			this.bounds.h = this.radius * 2;
 
 			switch(this.facing){
+				//NORMAL MOVEMENT
 				case UP: 
 					this.bounds.y = this.bounds.y - speed;
 				break;
 				case RIGHT:
-					this.bounds.w = this.bounds.w + speed;
+					//CHECK FOR WRAP-AROUND POSITION
+					if(this.x > canvas.width){
+						this.x = 0 + speed;
+					}else{
+						this.bounds.w = this.bounds.w + speed;
+					}
 				break;
 				case DOWN:
 					this.bounds.h = this.bounds.h + speed;
 				break;
 				case LEFT:
-					this.bounds.x = this.bounds.x - speed;
+					//CHECK FOR WRAP-AROUND POSITION
+					if(this.x < 0){
+						this.x = canvas.width - speed;
+					}else{
+						this.bounds.x = this.bounds.x - speed;
+					}
 				break;
 			}
 			//DEBUG
-			//console.log('this.x: ' + x + ', this.y: ' + y + ', bounds.x: ' + this.bounds.x + ', bounds.y: ' + this.bounds.y + ', bounds.w: ' + this.bounds.w + ', bounds.h: ' + this.bounds.h);
+			if(showPacmanPosition){
+				console.log('this.x: ' + x + ', this.y: ' + y + ', bounds.x: ' + this.bounds.x + ', bounds.y: ' + this.bounds.y + ', bounds.w: ' + this.bounds.w + ', bounds.h: ' + this.bounds.h);
+			}
 			
 		},
 		intersects: function(rect){
@@ -217,13 +231,23 @@
 					this.bounds.y = this.bounds.y - this.speed;
 				break;
 				case RIGHT:
-					this.bounds.w = this.bounds.w + this.speed;
+					//CHECK FOR WRAP-AROUND POSITION
+					if(this.x > canvas.width){
+						this.x = 0 + (speed - 1);
+					}else{
+						this.bounds.w = this.bounds.w + this.speed;
+					}
 				break;
 				case DOWN:
 					this.bounds.h = this.bounds.h + this.speed;
 				break;
 				case LEFT:
-					this.bounds.x = this.bounds.x - this.speed;
+					//CHECK FOR WRAP-AROUND POSITION
+					if(this.x < 0){
+						this.x = canvas.width - speed;
+					}else{
+						this.bounds.x = this.bounds.x - this.speed;
+					}
 				break;
 			}
 		};
@@ -248,9 +272,9 @@
 	//CREATE GHOSTS
 	var ghosts = []
 	ghosts.push(new Sprite('blinky', '#FF0000', 182, 221, 10, 4, 'chaser', RIGHT));
-	ghosts.push(new Sprite('pinky', '#fc9ff9', 182, 256, 10, 4, 'chaser', LEFT));
+	ghosts.push(new Sprite('pinky', '#fc9ff9', 182, 256, 10, 4, 'ambush', LEFT));
 	ghosts.push(new Sprite('inky', '#00fff2', 182, 272, 10, 4, 'chaser', LEFT));
-	ghosts.push(new Sprite('clyde', '#fcba03', 182, 221, 10, 4, 'chaser', LEFT));
+	ghosts.push(new Sprite('clyde', '#fcba03', 182, 221, 10, 4, 'random', LEFT));
 	
 	
 	//ADD KEY EVENT LISTENERS
@@ -568,35 +592,90 @@
 			//changed from the direction the ghost is facing, however I don't run the ai, causing the ghost to continue travelling
 			//straight when he hits a right angle. But this could be a possible optimization if i get performance issues
 			//if(allowedDirections.length > 1){
+			
+			//SET DESTINATION POINT
+			switch(ghosts[i].ai){
+				case 'chaser':
+					destinationX = pacman.x;
+					destinationY = pacman.y;
+				break;
+				case 'ambush':
+					//THE ORIGINAL ARCADE PAC-MAN AI INTENDS THE DESTINATION POINT TO BE INFRONT OF PACMAN, HOWEVER DUE TO A BUG, ITS CALCULATED AS ABOVE AND TO THE LEFT
+					//I HAVE REPLICATED THIS BEHAVIOUR BECAUSE WHY NOT
+					switch(pacman.facing){
+						case UP:
+							destinationX = pacman.x - pacman.radius * 4;
+							destinationY = pacman.y - pacman.radius * 4;
+						break;
+						case RIGHT:
+							destinationX = pacman.x + pacman.radius * 4;
+							destinationY = pacman.y + pacman.radius * 4;
+						break;
+						case DOWN:
+							destinationX = pacman.x + pacman.radius * 4;
+							destinationY = pacman.y - pacman.radius * 4;
+						break;
+						case LEFT:
+							destinationX = pacman.x + pacman.radius * 4;
+							destinationY = pacman.y - pacman.radius * 4;
+						break;
+					}
+				break;
+				case 'flank':
+					//to-do - this is more complicated, i need to flip the ghosts vector 180 degrees from these points, see
+					//https://www.youtube.com/watch?v=ataGotQ7ir8&t=411s
+					switch(pacman.facing){
+						case UP:
+							destinationX = pacman.x;
+							destinationY = pacman.y;
+						break;
+						case RIGHT:
+							destinationX = pacman.x;
+							destinationY = pacman.y;
+						break;
+						case DOWN:
+							destinationX = pacman.x;
+							destinationY = pacman.y;
+						break;
+						case LEFT:
+							destinationX = pacman.x;
+							destinationY = pacman.y;
+						break;
+					}
+				break;
+			}
+			
 			//CHANGE BASED ON GHOST AI
 			switch(ghosts[i].ai){
-				//ALWAYS TAKE THE SHORTEST PATH TO WHERE PAC-MAN IS
+				//AIS THAT USE A DESTINATION POINT
 				case 'chaser':
+				case 'ambush':
+				case 'flank':
 					for(ad = 0; ad < allowedDirections.length; ad++){
 						switch(allowedDirections[ad]){
 							case UP:
-								len = getLength(ghosts[i].x, ghosts[i].y - ghosts[i].radius, pacman.x, pacman.y);
+								len = getLength(ghosts[i].x, ghosts[i].y - ghosts[i].radius, destinationX, destinationY);
 								if(len < shortestDistance){
 									directionTo = UP;
 									shortestDistance = len;
 								}
 							break;
 							case RIGHT:
-								len = getLength(ghosts[i].x + ghosts[i].radius, ghosts[i].y, pacman.x, pacman.y);
+								len = getLength(ghosts[i].x + ghosts[i].radius, ghosts[i].y, destinationX, destinationY);
 								if(len < shortestDistance){
 									directionTo = RIGHT;
 									shortestDistance = len;
 								}
 							break;
 							case DOWN:
-								len = getLength(ghosts[i].x, ghosts[i].y + ghosts[i].radius, pacman.x, pacman.y);
+								len = getLength(ghosts[i].x, ghosts[i].y + ghosts[i].radius, destinationX, destinationY);
 								if(len < shortestDistance){
 									directionTo = DOWN;
 									shortestDistance = len;
 								}
 							break;
 							case LEFT:
-								len = getLength(ghosts[i].x - ghosts[i].radius, ghosts[i].y, pacman.x, pacman.y);
+								len = getLength(ghosts[i].x - ghosts[i].radius, ghosts[i].y, destinationX, destinationY);
 								if(len < shortestDistance){
 									directionTo = LEFT;
 									shortestDistance = len;
@@ -605,10 +684,15 @@
 						}
 					}
 				break;
-				//to-do: 
-				//the other chaser ais - i've currently got just head to where pac man is, but i also need random, and the one two squares ahead of pac-man (ambush), and the two ahead and two to the side (flank?)
+				//PICK A RANDOM DIRECTION WHEN POSSIBLE
+				case 'random':
+					if(allowedDirections.length >= 1){
+						directionTo = allowedDirections[Math.floor(Math.random() * allowedDirections.length)];
+					}
+				break;
+				
+
 			}
-			//}
 			
 			//SET FACING
 			ghosts[i].facing = directionTo;
@@ -630,7 +714,12 @@
 					ghosts[i].facing = UP;
 				break;
 				case RIGHT:
-					ghosts[i].updatePosition(ghosts[i].x + ghosts[i].speed, ghosts[i].y);
+					//CHECK FOR WRAP-AROUND TUNNEL, GHOSTS TRAVEL SLOWER THROUGH IT
+					if((ghosts[i].x > 403 || ghosts[i].x < 88) && ghosts[i].y == 273){
+						ghosts[i].updatePosition(ghosts[i].x + (ghosts[i].speed - 1), ghosts[i].y);
+					}else{
+						ghosts[i].updatePosition(ghosts[i].x + ghosts[i].speed, ghosts[i].y);
+					}
 					ghosts[i].facing = RIGHT;
 				break;
 				case DOWN:
@@ -638,7 +727,12 @@
 					ghosts[i].facing = DOWN;
 				break;
 				case LEFT:
-					ghosts[i].updatePosition(ghosts[i].x - ghosts[i].speed, ghosts[i].y);
+					//CHECK FOR WRAP-AROUND TUNNEL, GHOSTS TRAVEL SLOWER THROUGH IT
+					if((ghosts[i].x < 88 || ghosts[i].x < 403) && ghosts[i].y == 273){
+						ghosts[i].updatePosition(ghosts[i].x - (ghosts[i].speed - 1), ghosts[i].y);
+					}else{
+						ghosts[i].updatePosition(ghosts[i].x - ghosts[i].speed, ghosts[i].y);
+					}
 					ghosts[i].facing = LEFT;
 				break;
 			}
