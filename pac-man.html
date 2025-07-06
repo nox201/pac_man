@@ -6,21 +6,54 @@
 			#game {
 				background-color: black;
 			}
+			.container {
+				text-align: center;
+			}
+			.header {
+				<!-- margin-top: 100px; -->
+			}
 		</style>
 	</head>
 </html>
 
-<body>
-	<div class="gameArea">
-		<canvas id="game" width="494" height="572"></canvas>
-		squares of 26 x 26 pixels.
+<body style="background-color: grey">
+	<div class="container">
+		<div class="header">
+
+		</div>
+		<div class="gameArea">
+			<canvas id="game" width="494" height="572"></canvas>
+		</div>
+		<button onclick="startGame()">Start</button>
+		<button onclick="setFrameRate('pause')">Pause</button>
+		<button onclick="draw()">Single Frame</button>
 	</div>
-	<button onclick="startGame()">Start</button>
-	<button onclick="setFrameRate('pause')">Pause</button>
-	<button onclick="draw()">Single Frame</button>
 </body>
 
 <script>
+
+	//BIG TO-DOs
+	//inkys flank AI
+	//clydes weird AI
+	//ghost scatter AI
+	//ghost phases
+	//ghost house
+	//correct pac-mans starting location
+	//death - lives counter, resetting the game
+	//power pellets, engerizers
+	//ghost scared AI
+	//ghost eaten AI
+	//levels, difficulty?
+	//score
+	//styling, score display, flashing lights, bells and whistles
+
+	//idea how to the get ghost house to work - at the start of the level, describe the walls as the shape:
+	//|- -|
+	//|   |
+	//|---|
+	//but then after X frames, update the walls array so it becomes the solid block. or in fact just add in a new wall in the top middle.
+	//remember I'll need to swap between these two states for the ghosts eaten mode. So yeah, make a function toggleGhosthouse, which just 
+	//checks the state of the walls elements and updates it accordingly
 	
 	//SET DIRECTION CONSTANTS
 	const UP = 0;
@@ -34,6 +67,8 @@
 	var showCoords = false;
 	var showPacmanPosition = false;
 	var showGhostAllowedDirections = false;
+	var showGhostsTargetCoords = true;
+	var showKeyInputs = false;
 	
 	//CANVAS
 	let canvas = document.getElementById('game');
@@ -45,7 +80,6 @@
 	//var height = canvas.height / pixelSize;
 	var score = 0;
 	var direction = RIGHT;
-	var existingDirection = RIGHT;
 	
 	var speed = 5;
 	
@@ -276,63 +310,42 @@
 	ghosts.push(new Sprite('inky', '#00fff2', 182, 272, 10, 4, 'chaser', LEFT));
 	ghosts.push(new Sprite('clyde', '#fcba03', 182, 221, 10, 4, 'random', LEFT));
 	
+	//--
 	
 	//ADD KEY EVENT LISTENERS
-	//to-do - the collision check doesn't seem to work! I want it to ignore a button press if pac-man can't move
-	//this will allow the player to hold a key down prior to a corner and prevent annoying getting stuck on corners
 	document.addEventListener("keydown", changeDirection);
 	function changeDirection(e){
+		if(showKeyInputs){
+			console.log(e.code + ' pressed');
+		}
 		//SWITCH INPUT
 		switch(e.code){
 			case 'KeyW':
 			case 'ArrowUp':
-				//SET BOUND DIIRECTION TO CHECK
-				pacman.setBounds(UP);
-				//ITERATE WALLS
-				for(i = 0; i < walls.length; i++){
-					//CHECK FOR COLLISION
-					if(!pacman.intersects(walls[i])){
-						direction = UP;
-					}
-				}
-				//RESET BOUNDS
-				pacman.resetBounds(UP);
+				//BUFFER DIRECTION, WILL BE CHECKED IN movePacman()
+				direction = UP;
 			break;
 			case 'KeyD':
 			case 'ArrowRight':
-				pacman.setBounds(RIGHT);
-				for(i = 0; i < walls.length; i++){
-					if(!pacman.intersects(walls[i])){
-						direction = RIGHT;
-					}
-				}
-				pacman.resetBounds(RIGHT);
+				direction = RIGHT;
 			break;
 			case 'KeyS':
 			case 'ArrowDown':
-				pacman.setBounds(DOWN);
-				for(i = 0; i < walls.length; i++){
-					if(!pacman.intersects(walls[i])){
-						direction = DOWN;
-					}
-				}
-				pacman.resetBounds(DOWN);
+				direction = DOWN;
 			break;
 			case 'KeyA':
 			case 'ArrowLeft':
-				pacman.setBounds(LEFT);
-				for(i = 0; i < walls.length; i++){
-					if(!pacman.intersects(walls[i])){
-						direction = LEFT;
-					}
-				}
-				pacman.resetBounds(LEFT);
+				direction = LEFT;
 			break;
 			case 'Space':
 				setFrameRate('pause');
 			break;
+			case 'Enter':
+				startGame();
+			break;
 		}
 		//console.log('current direction is ' + direction);
+		
 	}
 	
 
@@ -343,7 +356,6 @@
 		
 		//DEBUG
 		console.log('drawn');
-		//console.log('direction: ' + direction + ', facing: ' + pacman.facing);
 		
 		//CLEAR PREVIOUS
 		plane.clearRect(0,0,canvas.width,canvas.height);
@@ -362,7 +374,7 @@
 		
 		//DRAW THE WALLS
 		drawWalls();
-		
+
 		//MOVE PAC-MAN
 		movePacman();
 		//DRAW PAC-MAN
@@ -372,13 +384,6 @@
 		moveGhosts();
 		//DRAW GHOSTS
 		drawGhosts();
-		
-		//--
-		
-		//UPDATE PAC-MANS DIRECTION
-		pacman.facing = direction;
-		
-		//--
 	
 	}
 	
@@ -456,12 +461,36 @@
 		}
 	}
 	
+	//This method allows buffered inputs, allowing the last direction the user pressed to be stored until pac-man can travel in that direction
 	function movePacman(){
-		
+	
 		//SET FLAG
 		collided = false;
 		
-		//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
+		//SET BOUNDS TO LOOK IN USER INPUT DIRECTION
+		pacman.setBounds(direction);
+		//ITERATE ALL WALLS
+		for(i = 0; i < walls.length; i++){
+			//CHECKS THE BOUNDS AGAINST THE WALL
+			if(pacman.intersects(walls[i])){
+				//SET FLAG
+				collided = true;
+				//NO NEED TO CHECK FURTHER WALLS
+				break;
+			}
+		}
+		if(!collided){
+			//PAC-MAN CAN TRAVEL IN THE DESIRED DIRECTION - UPDATE THE DIRECTION HES FACING
+			pacman.facing = direction;
+		}
+		pacman.resetBounds(direction);
+		
+		//--
+
+		//SET FLAG
+		collided = false;
+		
+		//SET BOUNDS TO LOOK IN PAC-MANS FACING DIRECTION
 		pacman.setBounds(pacman.facing);
 		//ITERATE ALL WALLS
 		for(i = 0; i < walls.length; i++){
@@ -551,7 +580,7 @@
 					allowedDirections = allowedDirections.filter(function(e) { return e != pd });
 					//SKIP 'REVERSE' DIRECTION
 					continue;
-				}			
+				}
 				
 				//SET BOUNDS TO LOOK IN ATTEMPTED DIRECTION
 				ghosts[i].setBounds(pd);
@@ -622,27 +651,39 @@
 					}
 				break;
 				case 'flank':
-					//to-do - this is more complicated, i need to flip the ghosts vector 180 degrees from these points, see
+					//to-do - this is more complicated, i need to flip the vector between blinky and pac-man 180 degrees, see
 					//https://www.youtube.com/watch?v=ataGotQ7ir8&t=411s
 					switch(pacman.facing){
 						case UP:
-							destinationX = pacman.x;
-							destinationY = pacman.y;
+							destinationX = pacman.x - pacman.radius * 4;
+							destinationY = pacman.y - pacman.radius * 4;
 						break;
 						case RIGHT:
-							destinationX = pacman.x;
-							destinationY = pacman.y;
+							destinationX = pacman.x + pacman.radius * 4;
+							destinationY = pacman.y + pacman.radius * 4;
 						break;
 						case DOWN:
-							destinationX = pacman.x;
-							destinationY = pacman.y;
+							destinationX = pacman.x + pacman.radius * 4;
+							destinationY = pacman.y - pacman.radius * 4;
 						break;
 						case LEFT:
-							destinationX = pacman.x;
-							destinationY = pacman.y;
+							destinationX = pacman.x + pacman.radius * 4;
+							destinationY = pacman.y - pacman.radius * 4;
 						break;
 					}
 				break;
+				case 'clyde':
+					//to-do: clydes AI isn't actually random, its a combination of scatter AI and heading to pac-man, dependent on his proximity to pac-man to start with
+				break;
+			}
+			
+			//DEBUG
+			if(showGhostsTargetCoords){
+				//DRAW A CIRCLE WHERE THE GHOSTS ARE ATTEMPTING TO GO
+				plane.beginPath();
+				plane.arc(destinationX, destinationY, ghosts[i].radius - 5, 0, 2 * Math.PI); 
+				plane.strokeStyle = ghosts[i].colour;
+				plane.stroke();
 			}
 			
 			//CHANGE BASED ON GHOST AI
@@ -769,7 +810,6 @@
 			case 'slow':
 				repeater = setInterval(draw, 200);
 			break;
-			0 
 			case 'medium':
 				repeater = setInterval(draw, 100);
 			break;
@@ -803,7 +843,6 @@
 		//setWalls(document.getElementById('walls').value);
 		
 		//
-		//existingDirection = UP;
 		//direction = UP;
 		
 		//SET FRAME RATE AND START DRAW LOOP
