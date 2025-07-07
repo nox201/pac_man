@@ -307,7 +307,7 @@
 	var ghosts = []
 	ghosts.push(new Sprite('blinky', '#FF0000', 182, 221, 10, 4, 'chaser', RIGHT));
 	ghosts.push(new Sprite('pinky', '#fc9ff9', 182, 256, 10, 4, 'ambush', LEFT));
-	ghosts.push(new Sprite('inky', '#00fff2', 182, 272, 10, 4, 'chaser', LEFT));
+	ghosts.push(new Sprite('inky', '#00fff2', 182, 272, 10, 4, 'flank', LEFT));
 	ghosts.push(new Sprite('clyde', '#fcba03', 182, 221, 10, 4, 'random', LEFT));
 	
 	//--
@@ -651,26 +651,28 @@
 					}
 				break;
 				case 'flank':
-					//to-do - this is more complicated, i need to flip the vector between blinky and pac-man 180 degrees, see
-					//https://www.youtube.com/watch?v=ataGotQ7ir8&t=411s
-					switch(pacman.facing){
-						case UP:
-							destinationX = pacman.x - pacman.radius * 4;
-							destinationY = pacman.y - pacman.radius * 4;
-						break;
-						case RIGHT:
-							destinationX = pacman.x + pacman.radius * 4;
-							destinationY = pacman.y + pacman.radius * 4;
-						break;
-						case DOWN:
-							destinationX = pacman.x + pacman.radius * 4;
-							destinationY = pacman.y - pacman.radius * 4;
-						break;
-						case LEFT:
-							destinationX = pacman.x + pacman.radius * 4;
-							destinationY = pacman.y - pacman.radius * 4;
-						break;
-					}
+					//THIS AI DRAWS A LINE BETWEEN BLINKY AND PAC-MAN, THEN ROTATES IT 180 DEGREES FROM THE STOP BLINKY IS AT TO GET THE TARGET LOCATION
+					//ANGLE OF LINE BETWEEN BLINKY AND PAC-MAN, IN RADIANS
+					var angle = Math.atan2((ghosts[0].y - pacman.y), (ghosts[0].x - pacman.x));
+					
+					//in progress, this doesn't quite work, although it does produce valid coords i think
+					
+					
+					console.log('angle before: ' + angle);
+					
+					//FLIP ANGLE 180 DEGREES
+					var angle = angle + Math.PI;
+					
+					console.log('angle after: ' + angle);
+					
+					//CALCULATE DISTANCE BETWEEN BLINKY AND PAC-MAN
+					var distance = Math.hypot(ghosts[0].x - pacman.x, ghosts[0].y - pacman.y);
+					//SET DESTINATION
+					destinationX = ghosts[0].x + distance * Math.cos(angle);
+					destinationY = ghosts[0].y + distance * Math.sin(angle);
+					
+					console.log('x: ' + destinationX + ', y: ' + destinationY);
+					
 				break;
 				case 'clyde':
 					//to-do: clydes AI isn't actually random, its a combination of scatter AI and heading to pac-man, dependent on his proximity to pac-man to start with
