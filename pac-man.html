@@ -27,15 +27,17 @@
 		<button onclick="startGame()">Start</button>
 		<button onclick="setFrameRate('pause')">Pause</button>
 		<button onclick="draw()">Single Frame</button>
+		<button onclick="setAiMode('chase')">AI: Chase</button>
+		<button onclick="setAiMode('scatter')">AI: Scatter</button>
 	</div>
 </body>
 
 <script>
-
+	
 	//BIG TO-DOs
-	//inkys flank AI
+	//inkys flank AI - DONE
 	//clydes weird AI
-	//ghost scatter AI
+	//ghost scatter AI - DONE
 	//ghost phases
 	//ghost house
 	//correct pac-mans starting location
@@ -65,7 +67,7 @@
 	//DEBUG OPTIONS
 	var drawBounds = false;
 	var showCoords = false;
-	var showPacmanPosition = false;
+	var showPacmanPosition = true;
 	var showGhostAllowedDirections = false;
 	var showGhostsTargetCoords = true;
 	var showKeyInputs = false;
@@ -638,44 +640,60 @@
 						break;
 						case RIGHT:
 							destinationX = pacman.x + pacman.radius * 4;
-							destinationY = pacman.y + pacman.radius * 4;
+							destinationY = pacman.y - pacman.radius * 4;
 						break;
 						case DOWN:
 							destinationX = pacman.x + pacman.radius * 4;
-							destinationY = pacman.y - pacman.radius * 4;
+							destinationY = pacman.y + pacman.radius * 4;
 						break;
 						case LEFT:
-							destinationX = pacman.x + pacman.radius * 4;
-							destinationY = pacman.y - pacman.radius * 4;
+							destinationX = pacman.x - pacman.radius * 4;
+							destinationY = pacman.y + pacman.radius * 4;
 						break;
 					}
 				break;
 				case 'flank':
-					//THIS AI DRAWS A LINE BETWEEN BLINKY AND PAC-MAN, THEN ROTATES IT 180 DEGREES FROM THE STOP BLINKY IS AT TO GET THE TARGET LOCATION
+					//THIS AI DRAWS A LINE BETWEEN BLINKY AND PAC-MAN, THEN EXTENDS IT PAST PAC-MAN THE SAME DISTANCE
 					//ANGLE OF LINE BETWEEN BLINKY AND PAC-MAN, IN RADIANS
-					var angle = Math.atan2((ghosts[0].y - pacman.y), (ghosts[0].x - pacman.x));
-					
-					//in progress, this doesn't quite work, although it does produce valid coords i think
-					
-					
-					console.log('angle before: ' + angle);
-					
-					//FLIP ANGLE 180 DEGREES
-					var angle = angle + Math.PI;
-					
-					console.log('angle after: ' + angle);
-					
+					var angle = Math.atan2((pacman.y - ghosts[0].y), (pacman.x - ghosts[0].x));
+
 					//CALCULATE DISTANCE BETWEEN BLINKY AND PAC-MAN
-					var distance = Math.hypot(ghosts[0].x - pacman.x, ghosts[0].y - pacman.y);
+					var distance = Math.hypot(pacman.x - ghosts[0].x, pacman.y - ghosts[0].y);
+
 					//SET DESTINATION
-					destinationX = ghosts[0].x + distance * Math.cos(angle);
-					destinationY = ghosts[0].y + distance * Math.sin(angle);
-					
-					console.log('x: ' + destinationX + ', y: ' + destinationY);
-					
+					destinationX = pacman.x + distance * Math.cos(angle);
+					destinationY = pacman.y + distance * Math.sin(angle);
 				break;
 				case 'clyde':
-					//to-do: clydes AI isn't actually random, its a combination of scatter AI and heading to pac-man, dependent on his proximity to pac-man to start with
+					//to-do: clydes ai is identical to blinkys when he is further than 8 tiles away from pacman, but
+					//if closer than 8 tiles, his ai is the same as in scatter mode, the bottom left corner
+					//so pretty simple, work out the pixel distance of '8 tiles' (26 x 8 = 208) and if this distance
+					//is greater, destination is pacmans location, if less then its bottom left corner
+					
+				break;
+				case 'scatter':
+					switch(ghosts[i].name){
+						case 'blinky':
+							//TOP LEFT
+							destinationX = 38;
+							destinationY = 38;
+						break;
+						case 'pinky':
+							//TOP RIGHT
+							destinationX = 453;
+							destinationY = 38;
+						break;
+						case 'inky':
+							//BOTTOM RIGHT
+							destinationX = 453;
+							destinationY = 533;
+						break;
+						case 'clyde':
+							//BOTTOM LEFT
+							destinationX = 38;
+							destinationY = 533;
+						break;
+					}
 				break;
 			}
 			
@@ -694,6 +712,7 @@
 				case 'chaser':
 				case 'ambush':
 				case 'flank':
+				case 'scatter':
 					for(ad = 0; ad < allowedDirections.length; ad++){
 						switch(allowedDirections[ad]){
 							case UP:
@@ -783,6 +802,53 @@
 		}
 		
 	
+	}
+	
+	//--
+	
+	function turnGhostsAround()
+	{
+		for(i = 0; i < ghosts.length; i++){
+			switch(ghosts[i].facing){
+				case UP:
+					ghosts[i].facing = DOWN;
+				break;
+				case RIGHT:
+					ghosts[i].facing = LEFT;
+				break;
+				case DOWN:
+					ghosts[i].facing = UP;
+				break;
+				case LEFT:
+					ghosts[i].facing = RIGHT;
+				break;
+			}
+		}
+	}
+	
+	//--
+	
+	function setAiMode(mode)
+	{
+		//GHOSTS TURN AROUND - will this happen on every AI switch? maybe not when switching to eaten mode? 
+		//but then can just move this call into the switch block
+		turnGhostsAround();
+		
+		switch(mode){
+			case 'chase':
+				//SET GHOSTS TO THEIR SPECIFIC AIS
+				ghosts[0].ai = 'chaser';
+				ghosts[1].ai = 'ambush';
+				ghosts[2].ai = 'flank';
+				//ghosts[3].ai = 'clyde';
+				ghosts[3].ai = 'random';
+			break;
+			case 'scatter':
+				for(i = 0; i < ghosts.length; i++){
+					ghosts[i].ai = 'scatter';
+				}
+			break;
+		}
 	}
 	
 	//--
