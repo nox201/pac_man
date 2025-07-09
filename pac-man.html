@@ -29,6 +29,7 @@
 		<button onclick="draw()">Single Frame</button>
 		<button onclick="setAiMode('chase')">AI: Chase</button>
 		<button onclick="setAiMode('scatter')">AI: Scatter</button>
+		<button onclick="setAiMode('frightened')">AI: Frightened</button>
 	</div>
 </body>
 
@@ -36,14 +37,14 @@
 	
 	//BIG TO-DOs
 	//inkys flank AI - DONE
-	//clydes weird AI
+	//clydes weird AI - DONE
 	//ghost scatter AI - DONE
 	//ghost phases
 	//ghost house
 	//correct pac-mans starting location
 	//death - lives counter, resetting the game
 	//power pellets, engerizers
-	//ghost scared AI
+	//ghost frightened AI - DONE
 	//ghost eaten AI
 	//levels, difficulty?
 	//score
@@ -69,7 +70,7 @@
 	var showCoords = false;
 	var showPacmanPosition = true;
 	var showGhostAllowedDirections = false;
-	var showGhostsTargetCoords = true;
+	var showGhostsTargetCoords = false;
 	var showKeyInputs = false;
 	
 	//CANVAS
@@ -310,7 +311,7 @@
 	ghosts.push(new Sprite('blinky', '#FF0000', 182, 221, 10, 4, 'chaser', RIGHT));
 	ghosts.push(new Sprite('pinky', '#fc9ff9', 182, 256, 10, 4, 'ambush', LEFT));
 	ghosts.push(new Sprite('inky', '#00fff2', 182, 272, 10, 4, 'flank', LEFT));
-	ghosts.push(new Sprite('clyde', '#fcba03', 182, 221, 10, 4, 'random', LEFT));
+	ghosts.push(new Sprite('clyde', '#fcba03', 182, 221, 10, 4, 'clyde', LEFT));
 	
 	//--
 	
@@ -665,11 +666,18 @@
 					destinationY = pacman.y + distance * Math.sin(angle);
 				break;
 				case 'clyde':
-					//to-do: clydes ai is identical to blinkys when he is further than 8 tiles away from pacman, but
-					//if closer than 8 tiles, his ai is the same as in scatter mode, the bottom left corner
-					//so pretty simple, work out the pixel distance of '8 tiles' (26 x 8 = 208) and if this distance
-					//is greater, destination is pacmans location, if less then its bottom left corner
-					
+					//CALCULATE DISTANCE BETWEEN CLYDE AND PAC-MAN
+					var distance = Math.hypot(pacman.x - ghosts[3].x, pacman.y - ghosts[3].y);
+					//CHECK DISTANCE - AROUND 8 TILES
+					if(distance > 208){
+						//HEAD TOWARDS PACMAN
+						destinationX = pacman.x;
+						destinationY = pacman.y;
+					}else{
+						//HEAD TOWARDS BOTTOM LEFT
+						destinationX = 38;
+						destinationY = 533;
+					}
 				break;
 				case 'scatter':
 					switch(ghosts[i].name){
@@ -712,6 +720,7 @@
 				case 'chaser':
 				case 'ambush':
 				case 'flank':
+				case 'clyde':
 				case 'scatter':
 					for(ad = 0; ad < allowedDirections.length; ad++){
 						switch(allowedDirections[ad]){
@@ -747,13 +756,12 @@
 					}
 				break;
 				//PICK A RANDOM DIRECTION WHEN POSSIBLE
-				case 'random':
+				case 'frightened':
 					if(allowedDirections.length >= 1){
 						directionTo = allowedDirections[Math.floor(Math.random() * allowedDirections.length)];
 					}
 				break;
 				
-
 			}
 			
 			//SET FACING
@@ -763,11 +771,6 @@
 			if(showGhostAllowedDirections){
 				console.log('Ghosts direction to is: ' + directions[directionTo]);
 			}
-
-			//this should just make him travel in a straight line, and pick a random direction when he can't
-			//if(!allowedDirections.includes(ghosts[i].facing)){
-				//ghosts[i].facing = allowedDirections[Math.floor(Math.random() * allowedDirections.length)];
-			//}
 			
 			//MOVE GHOST
 			switch(ghosts[i].facing){
@@ -840,12 +843,16 @@
 				ghosts[0].ai = 'chaser';
 				ghosts[1].ai = 'ambush';
 				ghosts[2].ai = 'flank';
-				//ghosts[3].ai = 'clyde';
-				ghosts[3].ai = 'random';
+				ghosts[3].ai = 'clyde';
 			break;
 			case 'scatter':
 				for(i = 0; i < ghosts.length; i++){
 					ghosts[i].ai = 'scatter';
+				}
+			break;
+			case 'frightened':
+				for(i = 0; i < ghosts.length; i++){
+					ghosts[i].ai = 'frightened';
 				}
 			break;
 		}
