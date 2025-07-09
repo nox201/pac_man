@@ -229,7 +229,7 @@
 	};
 	
 	class Sprite {
-		constructor(name, colour, x, y, radius, speed, ai, facing){
+		constructor(name, colour, x, y, radius, speed, ai, facing, phase){
 			this.name = name;
 			this.colour = colour;
 			this.x = x;
@@ -238,6 +238,7 @@
 			this.speed = speed;
 			this.ai = ai;
 			this.facing = facing;
+			this.phase = phase;
 		};
 		name = 'default';
 		colour = '#FF0000';
@@ -308,10 +309,10 @@
 	
 	//CREATE GHOSTS
 	var ghosts = []
-	ghosts.push(new Sprite('blinky', '#FF0000', 182, 221, 10, 4, 'chaser', RIGHT));
-	ghosts.push(new Sprite('pinky', '#fc9ff9', 182, 256, 10, 4, 'ambush', LEFT));
-	ghosts.push(new Sprite('inky', '#00fff2', 182, 272, 10, 4, 'flank', LEFT));
-	ghosts.push(new Sprite('clyde', '#fcba03', 182, 221, 10, 4, 'clyde', LEFT));
+	ghosts.push(new Sprite('blinky', '#FF0000', 182, 221, 10, 4, 'chaser', RIGHT, 0));
+	ghosts.push(new Sprite('pinky', '#fc9ff9', 182, 256, 10, 4, 'ambush', LEFT, 1));
+	ghosts.push(new Sprite('inky', '#00fff2', 182, 272, 10, 4, 'flank', LEFT, 0));
+	ghosts.push(new Sprite('clyde', '#fcba03', 182, 221, 10, 4, 'clyde', LEFT, 1));
 	
 	//--
 	
@@ -534,11 +535,80 @@
 		//ITERATE GHOSTS
 		for(i = 0; i < ghosts.length; i++){
 			//TO-DO - ghosts phases
+
 			plane.beginPath();
-			plane.arc(ghosts[i].x, ghosts[i].y, ghosts[i].radius, 0, 2 * Math.PI); 
+			plane.arc(ghosts[i].x, ghosts[i].y, ghosts[i].radius, 0, Math.PI, true); 
+			plane.lineTo((ghosts[i].x - ghosts[i].radius), ghosts[i].y);
+			//plane.lineTo((ghosts[i].x - ghosts[i].radius), (ghosts[i].y + ghosts[i].radius + 2));
+			switch(ghosts[i].phase){
+				case 0:
+					plane.lineTo((ghosts[i].x - ghosts[i].radius), (ghosts[i].y + ghosts[i].radius + 2));
+					plane.lineTo((ghosts[i].x - ghosts[i].radius + 4), (ghosts[i].y + ghosts[i].radius - 2));
+					plane.lineTo((ghosts[i].x - ghosts[i].radius + 7), (ghosts[i].y + ghosts[i].radius + 2));
+					plane.lineTo((ghosts[i].x - ghosts[i].radius + 9), (ghosts[i].y + ghosts[i].radius - 2));
+					plane.lineTo((ghosts[i].x - ghosts[i].radius + 12), (ghosts[i].y + ghosts[i].radius + 2));
+					plane.lineTo((ghosts[i].x - ghosts[i].radius + 15), (ghosts[i].y + ghosts[i].radius - 2));
+					plane.lineTo((ghosts[i].x - ghosts[i].radius + 20), (ghosts[i].y + ghosts[i].radius + 2));
+				break;
+				case 1:
+					plane.lineTo((ghosts[i].x - ghosts[i].radius), (ghosts[i].y + ghosts[i].radius));
+					plane.lineTo((ghosts[i].x - ghosts[i].radius + 4), (ghosts[i].y + ghosts[i].radius + 2));
+					plane.lineTo((ghosts[i].x - ghosts[i].radius + 7), (ghosts[i].y + ghosts[i].radius - 2));
+					plane.lineTo((ghosts[i].x - ghosts[i].radius + 9), (ghosts[i].y + ghosts[i].radius + 2));
+					plane.lineTo((ghosts[i].x - ghosts[i].radius + 12), (ghosts[i].y + ghosts[i].radius - 2));
+					plane.lineTo((ghosts[i].x - ghosts[i].radius + 15), (ghosts[i].y + ghosts[i].radius + 2));
+					plane.lineTo((ghosts[i].x - ghosts[i].radius + 20), (ghosts[i].y + ghosts[i].radius - 2));
+				break;
+			}
 			plane.fillStyle = ghosts[i].colour;
 			plane.fill();
 			
+			//UPDATE GHOSTS PHASE ('ANIMATION')
+			if(ghosts[i].phase == 1){
+				ghosts[i].phase = 0;
+			}else{
+				ghosts[i].phase = ghosts[i].phase + 1;
+			}
+			
+			//DRAW EYES
+			plane.fillStyle = 'white';
+			plane.beginPath();
+			plane.arc(ghosts[i].x - 5, ghosts[i].y - 5, 4, 0, Math.PI * 2);
+			plane.fill();
+			plane.beginPath();
+			plane.arc(ghosts[i].x + 5, ghosts[i].y - 5, 4, 0, Math.PI * 2);
+			plane.fill();
+			//DRAW PUPILS
+			plane.fillStyle = 'blue';
+			plane.beginPath();
+			switch(ghosts[i].facing){
+				case UP:
+					plane.arc(ghosts[i].x - 5, ghosts[i].y - 8, 2, 0, Math.PI * 2);
+					plane.fill();
+					plane.beginPath();
+					plane.arc(ghosts[i].x + 5, ghosts[i].y - 8, 2, 0, Math.PI * 2);
+				break;
+				case RIGHT:
+					plane.arc(ghosts[i].x - 2, ghosts[i].y - 5, 2, 0, Math.PI * 2);
+					plane.fill();
+					plane.beginPath();
+					plane.arc(ghosts[i].x + 8, ghosts[i].y - 5, 2, 0, Math.PI * 2);
+				break;
+				case DOWN:
+					plane.arc(ghosts[i].x - 5, ghosts[i].y - 2, 2, 0, Math.PI * 2);
+					plane.fill();
+					plane.beginPath();
+					plane.arc(ghosts[i].x + 5, ghosts[i].y - 2, 2, 0, Math.PI * 2);
+				break;
+				case LEFT:
+					plane.arc(ghosts[i].x - 8, ghosts[i].y - 5, 2, 0, Math.PI * 2);
+					plane.fill();
+					plane.beginPath();
+					plane.arc(ghosts[i].x + 2, ghosts[i].y - 5, 2, 0, Math.PI * 2);
+				break;
+			}
+			plane.fill();
+
 			//DEBUG - DRAW BOUNDS
 			if(drawBounds){
 				plane.rect(ghosts[i].bounds.x, ghosts[i].bounds.y, ghosts[i].bounds.w, ghosts[i].bounds.h);
@@ -780,6 +850,7 @@
 				break;
 				case RIGHT:
 					//CHECK FOR WRAP-AROUND TUNNEL, GHOSTS TRAVEL SLOWER THROUGH IT
+					//pretty sure theres a bug here, the ghosts sometimes don't appear to slow down
 					if((ghosts[i].x > 403 || ghosts[i].x < 88) && ghosts[i].y == 273){
 						ghosts[i].updatePosition(ghosts[i].x + (ghosts[i].speed - 1), ghosts[i].y);
 					}else{
@@ -793,6 +864,7 @@
 				break;
 				case LEFT:
 					//CHECK FOR WRAP-AROUND TUNNEL, GHOSTS TRAVEL SLOWER THROUGH IT
+					//pretty sure theres a bug here, the ghosts sometimes don't appear to slow down
 					if((ghosts[i].x < 88 || ghosts[i].x < 403) && ghosts[i].y == 273){
 						ghosts[i].updatePosition(ghosts[i].x - (ghosts[i].speed - 1), ghosts[i].y);
 					}else{
