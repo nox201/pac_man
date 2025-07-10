@@ -30,6 +30,9 @@
 		<button onclick="setAiMode('chase')">AI: Chase</button>
 		<button onclick="setAiMode('scatter')">AI: Scatter</button>
 		<button onclick="setAiMode('frightened')">AI: Frightened</button>
+		<button onclick="setAiMode('atHome')">AI: At Home</button>
+		<button onclick="setAiMode('goHome')">AI: Go Home</button>
+		<button onclick="toggleGhostHouse()">Toggle Ghost House</button>
 	</div>
 </body>
 
@@ -39,7 +42,7 @@
 	//inkys flank AI - DONE
 	//clydes weird AI - DONE
 	//ghost scatter AI - DONE
-	//ghost phases
+	//ghost phases - DONE
 	//ghost house
 	//correct pac-mans starting location
 	//death - lives counter, resetting the game
@@ -68,9 +71,10 @@
 	//DEBUG OPTIONS
 	var drawBounds = false;
 	var showCoords = false;
-	var showPacmanPosition = true;
+	var showPacmanPosition = false;
+	var showSpritePosition = true;
 	var showGhostAllowedDirections = false;
-	var showGhostsTargetCoords = false;
+	var showGhostsTargetCoords = true;
 	var showKeyInputs = false;
 	
 	//CANVAS
@@ -87,7 +91,6 @@
 	var speed = 5;
 	
 	var walls = [];
-	//x, y, width, height
 	walls.push({x:0,y:0,w:494,h:26});
 	walls.push({x:0,y:26,w:26,h:182});
 	walls.push({x:468,y:26,w:52,h:182});
@@ -102,7 +105,6 @@
 	walls.push({x:338,y:130,w:26,h:130});
 	walls.push({x:390,y:130,w:52,h:26});
 	walls.push({x:234,y:156,w:26,h:52});
-	//
 	walls.push({x:156,y:182,w:52,h:26});
 	walls.push({x:286,y:182,w:52,h:26});
 	walls.push({x:26,y:182,w:78,h:26});
@@ -111,8 +113,13 @@
 	walls.push({x:390,y:208,w:26,h:26});
 	walls.push({x:0,y:234,w:104,h:26});
 	walls.push({x:390,y:234,w:104,h:26});
-	//ghostbox
-	walls.push({x:182,y:234,w:130,h:78});
+	//GHOST HOUSE
+	walls.push({x:182,y:234,w:52,h:26});
+	walls.push({x:260,y:234,w:52,h:26});
+	walls.push({x:182,y:260,w:26,h:26});
+	walls.push({x:286,y:260,w:26,h:26});
+	walls.push({x:182,y:286,w:130,h:26});
+	//END OF GHOST HOUSE
 	walls.push({x:0,y:286,w:104,h:26});
 	walls.push({x:130,y:286,w:26,h:78});
 	walls.push({x:338,y:286,w:26,h:78});
@@ -309,10 +316,10 @@
 	
 	//CREATE GHOSTS
 	var ghosts = []
-	ghosts.push(new Sprite('blinky', '#FF0000', 182, 221, 10, 4, 'chaser', RIGHT, 0));
-	ghosts.push(new Sprite('pinky', '#fc9ff9', 182, 256, 10, 4, 'ambush', LEFT, 1));
-	ghosts.push(new Sprite('inky', '#00fff2', 182, 272, 10, 4, 'flank', LEFT, 0));
-	ghosts.push(new Sprite('clyde', '#fcba03', 182, 221, 10, 4, 'clyde', LEFT, 1));
+	ghosts.push(new Sprite('blinky', '#FF0000', 273, 273, 10, 4, 'chaser', RIGHT, 0));
+	ghosts.push(new Sprite('pinky', '#fc9ff9', 223, 273, 10, 4, 'ambush', LEFT, 1));
+	ghosts.push(new Sprite('inky', '#00fff2', 248, 273, 10, 4, 'flank', LEFT, 0));
+	ghosts.push(new Sprite('clyde', '#fcba03', 248, 273, 10, 4, 'clyde', LEFT, 1));
 	
 	//--
 	
@@ -644,6 +651,11 @@
 					skip = LEFT;
 				break;
 			}
+			//SPECIAL CASE - GHOSTS CAN TURN AROUND IN THE GHOST HOUSE
+			if((ghosts[i].y == 273 || ghosts[i].y == 272) && (ghosts[i].x > 222 && ghosts[i].x < 274)){
+				//skip = null;
+			}
+			console.log(ghosts[i].name + ' skip is ' + skip);
 
 			//ITERATE ALL DIRECTIONS
 			for(pd = 0; pd < directions.length; pd++){
@@ -683,6 +695,23 @@
 				}
 			}
 			
+			if(allowedDirections.length == 0){
+				switch(ghosts[i].facing){
+				case UP:
+					ghosts[i].facing = DOWN;
+				break;
+				case RIGHT:
+					ghosts[i].facing = LEFT;
+				break;
+				case DOWN:
+					ghosts[i].facing = UP;
+				break;
+				case LEFT:
+					ghosts[i].facing = RIGHT;
+				break;
+			}
+			}
+			
 			//GHOST IS TO CONTINUE IN THE SAME DIRECTION
 			directionTo = ghosts[i].facing;
 			
@@ -697,6 +726,14 @@
 			
 			//SET DESTINATION POINT
 			switch(ghosts[i].ai){
+				case 'atHome':
+					destinationX = 248;
+					destinationY = 223;
+				break;
+				case 'goHome':
+					destinationX = 248;
+					destinationY = 278;
+				break;
 				case 'chaser':
 					destinationX = pacman.x;
 					destinationY = pacman.y;
@@ -787,6 +824,8 @@
 			//CHANGE BASED ON GHOST AI
 			switch(ghosts[i].ai){
 				//AIS THAT USE A DESTINATION POINT
+				case 'atHome':
+				case 'goHome':
 				case 'chaser':
 				case 'ambush':
 				case 'flank':
@@ -841,6 +880,10 @@
 			if(showGhostAllowedDirections){
 				console.log('Ghosts direction to is: ' + directions[directionTo]);
 			}
+			//DEBUG
+			if(showSpritePosition){
+				console.log(ghosts[i].name + ' - x: ' + ghosts[i].x + ', y: ' + ghosts[i].y + ', bounds.x: ' + ghosts[i].bounds.x + ', bounds.y: ' + ghosts[i].bounds.y + ', bounds.w: ' + ghosts[i].bounds.w + ', bounds.h: ' + ghosts[i].bounds.h);
+			}
 			
 			//MOVE GHOST
 			switch(ghosts[i].facing){
@@ -881,6 +924,7 @@
 	
 	//--
 	
+	//MINOR UTILITY GAME FUNCTIONS
 	function turnGhostsAround()
 	{
 		for(i = 0; i < ghosts.length; i++){
@@ -901,6 +945,18 @@
 		}
 	}
 	
+	function toggleGhostHouse()
+	{
+		//COUNT WALLS
+		if(walls.length == 54){
+			//BLOCK OFF GHOST HOUSE
+			walls.push({x:234,y:234,w:26,h:26});
+		}else{
+			//OPEN GHOST HOUSE
+			walls.pop();
+		}
+	}
+	
 	//--
 	
 	function setAiMode(mode)
@@ -910,6 +966,16 @@
 		turnGhostsAround();
 		
 		switch(mode){
+			case 'atHome':
+				for(i = 0; i < ghosts.length; i++){
+					ghosts[i].ai = 'atHome';
+				}
+			break;
+			case 'goHome':
+				for(i = 0; i < ghosts.length; i++){
+					ghosts[i].ai = 'goHome';
+				}
+			break;
 			case 'chase':
 				//SET GHOSTS TO THEIR SPECIFIC AIS
 				ghosts[0].ai = 'chaser';
