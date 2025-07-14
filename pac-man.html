@@ -8,9 +8,23 @@
 			}
 			.container {
 				text-align: center;
+				height: 600px;
 			}
 			.header {
 				<!-- margin-top: 100px; -->
+			}
+			#gameAreaSplash{
+				display: none;
+				position: sticky;
+				margin-top: -400px;
+				margin-left: 38%;
+				width: 24%;
+				color: white;
+				background-color: blue;
+				z-index: 1;
+			}
+			#controls {
+				text-align: center;
 			}
 		</style>
 	</head>
@@ -23,7 +37,14 @@
 		</div>
 		<div class="gameArea">
 			<canvas id="game" width="494" height="572"></canvas>
+			<div id="gameAreaSplash">
+				<p id="ready">Ready</p>
+				<p id="set">Set</p>
+				<p id="go">Go!</p>
+			</div>
 		</div>
+	</div>
+	<div id="controls">
 		<button onclick="startGame()">Start</button>
 		<button onclick="setFrameRate('pause')">Pause</button>
 		<button onclick="draw()">Single Frame</button>
@@ -44,11 +65,13 @@
 	//ghost scatter AI - DONE
 	//ghost phases - DONE
 	//ghost house
-	//correct pac-mans starting location
-	//death - lives counter, resetting the game
+	//correct pac-mans starting location - DONE
+	//death + lives counter
+	//resetting the game - DONE
 	//power pellets, engerizers
 	//ghost frightened AI - DONE
 	//ghost eaten AI
+	//ghost frightened and eaten phases
 	//levels, difficulty?
 	//score
 	//styling, score display, flashing lights, bells and whistles
@@ -72,21 +95,23 @@
 	var drawBounds = false;
 	var showCoords = false;
 	var showPacmanPosition = false;
-	var showSpritePosition = true;
+	var showSpritePosition = false;
 	var showGhostAllowedDirections = false;
-	var showGhostsTargetCoords = true;
+	var showGhostsTargetCoords = false;
 	var showKeyInputs = false;
 	
 	//CANVAS
 	let canvas = document.getElementById('game');
 	let plane = canvas.getContext("2d");
+	
+	let gameAreaSplashState = 'hidden';
 	//GAME VARIABLES
 	let state = 'play';
 	//var pixelSize = 20;
 	//var width = canvas.width / pixelSize;
 	//var height = canvas.height / pixelSize;
 	var score = 0;
-	var direction = RIGHT;
+	var direction = UP;
 	
 	var speed = 5;
 	
@@ -149,8 +174,8 @@
 	walls.push({x:26,y:546,w:468,h:26});
 	
 	var pacman = {
-		x: 38,
-		y: 38,
+		x: 248,
+		y: 428,
 		radius: 10,
 		//BOUNDS HAVE DEFAULT VALUES WHICH WILL BE OVERWRITTEN AS SOON AS updatePosition IS CALLED
 		bounds: {x: 30, y: 30, w: 2, h: 2},
@@ -232,6 +257,12 @@
 					this.bounds.x = this.bounds.x + this.speed;
 				break;
 			}
+		},
+		reset: function(){
+			this.x = 248;
+			this.y = 428;
+			this.facing = RIGHT;
+			this.updatePosition(this.x, this.y);
 		}
 	};
 	
@@ -311,6 +342,31 @@
 					this.bounds.x = this.bounds.x + this.speed;
 				break;
 			}
+		};
+		reset = function(name){
+			switch(name){
+				case 'blinky':
+					this.x = 273;
+					this.y = 273;
+					this.facing = RIGHT;
+				break;
+				case 'pinky':
+					this.x = 223;
+					this.y = 273;
+					this.facing = LEFT;				
+				break;
+				case 'inky':
+					this.x = 248;
+					this.y = 273;
+					this.facing = LEFT;				
+				break;
+				case 'clyde':
+					this.x = 248;
+					this.y = 273;
+					this.facing = LEFT;				
+				break;
+			}
+			this.ai = 'atHome';
 		}
 	};
 	
@@ -326,10 +382,11 @@
 	//ADD KEY EVENT LISTENERS
 	document.addEventListener("keydown", changeDirection);
 	function changeDirection(e){
+		//DEBUG
 		if(showKeyInputs){
 			console.log(e.code + ' pressed');
 		}
-		//SWITCH INPUT
+		//SET DIRECTION
 		switch(e.code){
 			case 'KeyW':
 			case 'ArrowUp':
@@ -651,11 +708,6 @@
 					skip = LEFT;
 				break;
 			}
-			//SPECIAL CASE - GHOSTS CAN TURN AROUND IN THE GHOST HOUSE
-			if((ghosts[i].y == 273 || ghosts[i].y == 272) && (ghosts[i].x > 222 && ghosts[i].x < 274)){
-				//skip = null;
-			}
-			console.log(ghosts[i].name + ' skip is ' + skip);
 
 			//ITERATE ALL DIRECTIONS
 			for(pd = 0; pd < directions.length; pd++){
@@ -1010,7 +1062,8 @@
 	//--
 	
 	//SET FRAME RATE (ALSO DOUBLES AS DIFFICULTY)
-	function setFrameRate(frameRate){
+	function setFrameRate(frameRate)
+	{
 		//STOP CURRENT REPEATER
 		if(typeof repeater !== 'undefined'){
 			clearInterval(repeater);
@@ -1018,7 +1071,9 @@
 		//RUN THE CANVAS
 		switch(frameRate){
 			case 'pause':
-				clearInterval(repeater);
+				if(typeof repeater !== 'undefined'){
+					clearInterval(repeater);
+				}
 			break;
 			case 'slow':
 				repeater = setInterval(draw, 200);
@@ -1035,40 +1090,95 @@
 		}
 	}
 	
-	//debug, just move blinky once 
-	//blinky.updatePosition(blinky.x + speed, blinky.y);
-
-	
 	//--
 	
 	//CALL THIS TO CLEAR THE BOARD, START A NEW GAME
-	function newGame(){
+	function newGame()
+	{
 		//CLEAR CANVAS
 		plane.clearRect(0,0,canvas.width,canvas.height);
-
+		//do other stuff, reset level, lives etc
 	}
 	
-	function startGame(){
-		//HIDE NEW GAME DIV
-		//document.getElementById("newGame").style.display = 'none';
+	function startGame(level)
+	{
+		//STOP THE GAME
+		setFrameRate('pause');
+
+		//RESET PAC-MANS POSITION
+		pacman.reset();
 		
-		//SET WALLS
-		//setWalls(document.getElementById('walls').value);
+		//RESET GHOSTS
+		for(i = 0; i < ghosts.length; i++){
+			ghosts[i].reset(ghosts[i].name);
+		}
 		
-		//
-		//direction = UP;
+		//DRAW FIRST FRAME
+		draw();
 		
+		//RESET DIRECTION
+		direction: RIGHT;
+		
+		//SHOW READY SET GO
+		updateGameAreaSplash();
+
 		//SET FRAME RATE AND START DRAW LOOP
-		setFrameRate('fast');
+		//wait for 3 seconds for the updateGameAreaSplash to finish - is there a better way of doing this?
+		//can I bind an event listener to the end of the function?
+		window.setTimeout(function(){ 
+			setFrameRate('fast'); 
+		}, 3000);
+		
+		//RESET GAME TIMER
+		//this will be used to dynamically update the ghosts AI as the level progresses
+		//so the ghosts start off in atHome AI, then update as soon as they all leave the ghosthouse, closing the ghost house and changing AI to chaser
+		//then as the level progresses they will swap between scatter and chase
+		//although im still not sure how i'll cope with opening and shutting the ghost house when the ghosts get eaten
+		//just check when the ghosts are in their starting positions and if they're in the ghost house, change their ai to atHome, wait a second and close it?? 
+		//will be buggy when other ghosts are also eaten and moving in/out of the ghost house :/
+		
 	}
 	
 	//CALL THIS TO DISPLAY GAME OVER
-	function gameOver(){
+	function gameOver()
+	{
 		//STOP REPEATER
 		setFrameRate('pause');
 		//DISPLAY GAME OVER DIV
 		document.getElementById('gameOver').style.display = 'block';
 		document.getElementsByClassName('score')[1].innerHTML = score;
+	}
+	
+	//CREATES A SPLASH SCREEN THAT DISPLAYS 'READY, SET, GO' OVER TIME, THEN HIDES THE DIV
+	function updateGameAreaSplash()
+	{
+		switch(gameAreaSplashState){
+			case 'hidden':
+				document.getElementById("gameAreaSplash").style.display = 'block';
+				document.getElementById("ready").style.display = 'block';
+				document.getElementById("set").style.display = 'none';
+				document.getElementById("go").style.display = 'none';
+				gameAreaSplashState = 'ready';
+				window.setTimeout(updateGameAreaSplash, 1000);
+			break;
+			case 'ready':
+				document.getElementById("ready").style.display = 'none';
+				document.getElementById("set").style.display = 'block';
+				gameAreaSplashState = 'set';
+				window.setTimeout(updateGameAreaSplash, 1000);
+			break;
+			case 'set':
+				document.getElementById("set").style.display = 'none';
+				document.getElementById("go").style.display = 'block';
+				gameAreaSplashState = 'go';
+				window.setTimeout(updateGameAreaSplash, 1000);
+			break;
+			case 'go':
+				document.getElementById("go").style.display = 'none';
+				document.getElementById("gameAreaSplash").style.display = 'none';
+				gameAreaSplashState = 'hidden';
+			break;
+		}
 	}
 	
 	//--	
