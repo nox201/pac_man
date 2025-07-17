@@ -54,10 +54,30 @@
 		<button onclick="setAiMode('atHome')">AI: At Home</button>
 		<button onclick="setAiMode('goHome')">AI: Go Home</button>
 		<button onclick="toggleGhostHouse()">Toggle Ghost House</button>
+		<button onclick="handleDeath()">Die</button>
 	</div>
+	
+<!--	<canvas id="test" width="200" height="200"></canvas>
+	<p>Start: <input id="testX" type="text"/></p>
+	<p>End: <input id="testY" type="text"/></p>
+	<button onclick="testDraw()">Test</button>-->
+	
 </body>
 
 <script>
+	
+	//TEST CANVAS
+/*	let testCanvas = document.getElementById('test');
+	let testPlane = testCanvas.getContext("2d");
+	function testDraw(){
+		startAngle = document.getElementById('testX').value;
+		endAngle = document.getElementById('testY').value;
+		testPlane.clearRect(0,0,testCanvas.width,testCanvas.height);
+		testPlane.beginPath();
+		testPlane.arc(75,75,50,startAngle,endAngle);
+		testPlane.fillStyle = '#FFF';
+		testPlane.stroke();	
+	}*/
 	
 	//BIG TO-DOs
 	//inkys flank AI - DONE
@@ -107,13 +127,10 @@
 	let gameAreaSplashState = 'hidden';
 	//GAME VARIABLES
 	let state = 'play';
-	//var pixelSize = 20;
-	//var width = canvas.width / pixelSize;
-	//var height = canvas.height / pixelSize;
 	var score = 0;
-	var direction = UP;
-	
+	var direction = RIGHT;
 	var speed = 5;
+	var deathPhase = 0;
 	
 	var walls = [];
 	walls.push({x:0,y:0,w:494,h:26});
@@ -1009,6 +1026,107 @@
 		}
 	}
 	
+	function handleDeath()
+	{
+		//PAUSE GAME
+		setFrameRate('pause');
+		
+		//PLAY DEATH ANIMATION
+		playDeathAnimation();
+		
+		//DECREMENT LIVES
+		//to-do
+		
+		//RESET GAME
+		setTimeout(startGame, 2500);
+	}
+	
+	function playDeathAnimation()
+	{
+		//DEFINE ARC RADIANS
+		let radians = [];
+		radians[UP] = [];
+		radians[UP][0] = [5.5, 3.9];
+		radians[UP][1] = [5.9, 3.5];
+		radians[UP][2] = [6.3, 3.1];
+		radians[UP][3] = [6.7, 2.7];
+		radians[UP][4] = [7.1, 2.3];
+		radians[UP][5] = [7.5, 1.9];
+		radians[RIGHT] = [];
+		radians[RIGHT][0] = [0.6, 5.6];
+		radians[RIGHT][1] = [1, 5.2];
+		radians[RIGHT][2] = [1.4, 4.8];
+		radians[RIGHT][3] = [1.8, 4.4];
+		radians[RIGHT][4] = [2.2, 4];
+		radians[RIGHT][5] = [2.6, 3.6];
+		radians[DOWN] = [];
+		radians[DOWN][0] = [2.4, 0.7];
+		radians[DOWN][1] = [2.8, 0.3];
+		radians[DOWN][2] = [3.2, 6.2];
+		radians[DOWN][3] = [3.6, 5.8];
+		radians[DOWN][4] = [4, 5.4];
+		radians[DOWN][5] = [4.4, 5];
+		radians[LEFT] = [];
+		radians[LEFT][0] = [3.9, 2.4];
+		radians[LEFT][1] = [4.3, 2];
+		radians[LEFT][2] = [4.7, 1.6];
+		radians[LEFT][3] = [5.1, 1.2];
+		radians[LEFT][4] = [5.5, 0.8];
+		radians[LEFT][5] = [5.9, 0.4];
+		
+		//CLEAR PREVIOUS
+		plane.clearRect(0,0,canvas.width,canvas.height);
+		//DRAW WALLS
+		drawWalls();
+		
+		if(deathPhase < 6){
+			//DRAW PAC-MAN
+			plane.beginPath();
+			plane.arc(pacman.x, pacman.y, pacman.radius, radians[pacman.facing][deathPhase][0], radians[pacman.facing][deathPhase][1]);
+			plane.lineTo(pacman.x, pacman.y);
+			plane.fillStyle = '#FFFF00';
+			plane.fill();
+		}else{
+			//to-do - finish this starburst effect
+			plane.beginPath();
+			plane.moveTo(pacman.x, pacman.y);
+			plane.lineTo(pacman.x -5, pacman.y - 5);
+			plane.stroke();
+			plane.moveTo(pacman.x, pacman.y);
+			plane.lineTo(pacman.x -5, pacman.y);
+			plane.stroke();
+			plane.moveTo(pacman.x, pacman.y);
+			plane.lineTo(pacman.x -5, pacman.y + 5);
+			plane.stroke();
+			plane.moveTo(pacman.x, pacman.y);
+			plane.lineTo(pacman.x, pacman.y + 5);
+			plane.stroke();
+			plane.moveTo(pacman.x, pacman.y);
+			plane.lineTo(pacman.x, pacman.y - 5);
+			plane.stroke();
+			plane.moveTo(pacman.x, pacman.y);
+			plane.lineTo(pacman.x + 5, pacman.y - 5);
+			plane.stroke();
+			plane.moveTo(pacman.x, pacman.y);
+			plane.lineTo(pacman.x + 5, pacman.y);
+			plane.stroke();
+			plane.moveTo(pacman.x, pacman.y);
+			plane.lineTo(pacman.x + 5, pacman.y + 5);
+			plane.stroke();
+		}
+		
+		//RESET DEATH ANIMATION COUNTER
+		if(deathPhase == 7){
+			deathPhase = 0;
+		}else{
+			//INCREMENT PHASE
+			deathPhase++;
+			//WAIT THEN DO NEXT FRAME
+			setTimeout(playDeathAnimation, 300);
+		}
+
+	}
+	
 	//--
 	
 	function setAiMode(mode)
@@ -1107,6 +1225,8 @@
 
 		//RESET PAC-MANS POSITION
 		pacman.reset();
+		//REDRAW PACMAN
+		drawPacman();
 		
 		//RESET GHOSTS
 		for(i = 0; i < ghosts.length; i++){
@@ -1117,7 +1237,7 @@
 		draw();
 		
 		//RESET DIRECTION
-		direction: RIGHT;
+		direction = RIGHT;
 		
 		//SHOW READY SET GO
 		updateGameAreaSplash();
