@@ -13,7 +13,17 @@
 			.header {
 				<!-- margin-top: 100px; -->
 			}
-			#gameAreaSplash{
+			#getReadySplash{
+				display: none;
+				position: sticky;
+				margin-top: -400px;
+				margin-left: 38%;
+				width: 24%;
+				color: white;
+				background-color: blue;
+				z-index: 1;
+			}
+			#gameOverSplash{
 				display: none;
 				position: sticky;
 				margin-top: -400px;
@@ -26,6 +36,20 @@
 			#controls {
 				text-align: center;
 			}
+			#gameArea {
+				width; 34%;
+				display: inline-block;
+			}
+			#infoLeft {
+				background-color: green;
+				width: 33%;
+				display: inline-block;
+			}
+			#infoRight {
+				background-color: green;
+				width: 33%;
+				display: inline-block;
+			}
 		</style>
 	</head>
 </html>
@@ -35,13 +59,21 @@
 		<div class="header">
 
 		</div>
-		<div class="gameArea">
+		<div id="infoLeft">
+			<p>LIVES</p>
+			<p id="livesCounter"></p>
+		</div>
+		<div id="gameArea">
 			<canvas id="game" width="494" height="572"></canvas>
-			<div id="gameAreaSplash">
+			<div id="getReadySplash">
 				<p id="ready">Ready</p>
 				<p id="set">Set</p>
 				<p id="go">Go!</p>
 			</div>
+		</div>
+		<div id="infoRight">
+			<p>SCORE</p>
+			<p>1234</p>
 		</div>
 	</div>
 	<div id="controls">
@@ -55,6 +87,7 @@
 		<button onclick="setAiMode('goHome')">AI: Go Home</button>
 		<button onclick="toggleGhostHouse()">Toggle Ghost House</button>
 		<button onclick="handleDeath()">Die</button>
+		<button onclick="toggleKillable()">Swap Killable</button>
 	</div>
 	
 <!--	<canvas id="test" width="200" height="200"></canvas>
@@ -86,7 +119,7 @@
 	//ghost phases - DONE
 	//ghost house
 	//correct pac-mans starting location - DONE
-	//death + lives counter
+	//death + lives counter - DONE
 	//resetting the game - DONE
 	//power pellets, engerizers
 	//ghost frightened AI - DONE
@@ -124,13 +157,15 @@
 	let canvas = document.getElementById('game');
 	let plane = canvas.getContext("2d");
 	
-	let gameAreaSplashState = 'hidden';
+	let getReadySplashState = 'hidden';
 	//GAME VARIABLES
 	let state = 'play';
 	var score = 0;
 	var direction = RIGHT;
 	var speed = 5;
 	var deathPhase = 0;
+	var killable = true;
+	var lives = 3;
 	
 	var walls = [];
 	walls.push({x:0,y:0,w:494,h:26});
@@ -751,6 +786,14 @@
 						break;
 					}
 				}
+				//CHECK PAC-MAN
+				if(killable){
+					if(ghosts[i].intersects(pacman.bounds)){
+						//DIE
+						handleDeath();
+						return;
+					}
+				}
 				//RESET BOUNDS
 				ghosts[i].resetBounds(pd);
 			}
@@ -1026,6 +1069,12 @@
 		}
 	}
 	
+	function toggleKillable()
+	{
+		killable = !killable;
+		//console.log('Killable: ' + killable);
+	}
+	
 	function handleDeath()
 	{
 		//PAUSE GAME
@@ -1035,7 +1084,11 @@
 		playDeathAnimation();
 		
 		//DECREMENT LIVES
-		//to-do
+		lives--;
+		updateLivesCounter(lives);
+		if(lives < 0){
+			gameOver();
+		}
 		
 		//RESET GAME
 		setTimeout(startGame, 2500);
@@ -1088,6 +1141,7 @@
 			plane.fill();
 		}else{
 			//to-do - finish this starburst effect
+			plane.fillStyle = '#FFFF00';
 			plane.beginPath();
 			plane.moveTo(pacman.x, pacman.y);
 			plane.lineTo(pacman.x -5, pacman.y - 5);
@@ -1122,7 +1176,7 @@
 			//INCREMENT PHASE
 			deathPhase++;
 			//WAIT THEN DO NEXT FRAME
-			setTimeout(playDeathAnimation, 300);
+			setTimeout(playDeathAnimation, 200);
 		}
 
 	}
@@ -1215,7 +1269,17 @@
 	{
 		//CLEAR CANVAS
 		plane.clearRect(0,0,canvas.width,canvas.height);
-		//do other stuff, reset level, lives etc
+
+		//RESET LIVES
+		lives = 3;
+		updateLivesCounter(lives);
+		
+		//RESET SCORE
+		
+		//RESET LEVEL
+		
+		//START GAME
+		//startGame(level);
 	}
 	
 	function startGame(level)
@@ -1240,10 +1304,10 @@
 		direction = RIGHT;
 		
 		//SHOW READY SET GO
-		updateGameAreaSplash();
+		updateGetReadySplash();
 
 		//SET FRAME RATE AND START DRAW LOOP
-		//wait for 3 seconds for the updateGameAreaSplash to finish - is there a better way of doing this?
+		//wait for 3 seconds for the updateGetReadySplash to finish - is there a better way of doing this?
 		//can I bind an event listener to the end of the function?
 		window.setTimeout(function(){ 
 			setFrameRate('fast'); 
@@ -1265,38 +1329,56 @@
 		//STOP REPEATER
 		setFrameRate('pause');
 		//DISPLAY GAME OVER DIV
-		document.getElementById('gameOver').style.display = 'block';
-		document.getElementsByClassName('score')[1].innerHTML = score;
+		//document.getElementById('gameOver').style.display = 'block';
+		
+	}
+	
+	//CREATES A SPLASH SCREEN THAT DISPLAYS GAME OVER
+	function updateLivesCounter(lives)
+	{
+		livesString = '';
+		for(i = 0; i < lives; i++){
+			livesString += '&#10084;';
+		}
+		document.getElementById('livesCounter').innerHTML = livesString;
+	}
+	
+	//CREATES A SPLASH SCREEN THAT DISPLAYS GAME OVER
+	function updateGameOverSplash()
+	{
+		
+	
+	
 	}
 	
 	//CREATES A SPLASH SCREEN THAT DISPLAYS 'READY, SET, GO' OVER TIME, THEN HIDES THE DIV
-	function updateGameAreaSplash()
+	function updateGetReadySplash()
 	{
-		switch(gameAreaSplashState){
+		switch(getReadySplashState){
 			case 'hidden':
-				document.getElementById("gameAreaSplash").style.display = 'block';
+				document.getElementById("getReadySplash").style.display = 'block';
 				document.getElementById("ready").style.display = 'block';
 				document.getElementById("set").style.display = 'none';
 				document.getElementById("go").style.display = 'none';
-				gameAreaSplashState = 'ready';
-				window.setTimeout(updateGameAreaSplash, 1000);
+				getReadySplashState = 'ready';
+				window.setTimeout(updateGetReadySplash, 1000);
 			break;
 			case 'ready':
 				document.getElementById("ready").style.display = 'none';
 				document.getElementById("set").style.display = 'block';
-				gameAreaSplashState = 'set';
-				window.setTimeout(updateGameAreaSplash, 1000);
+				getReadySplashState = 'set';
+				window.setTimeout(updateGetReadySplash, 1000);
 			break;
 			case 'set':
 				document.getElementById("set").style.display = 'none';
 				document.getElementById("go").style.display = 'block';
-				gameAreaSplashState = 'go';
-				window.setTimeout(updateGameAreaSplash, 1000);
+				getReadySplashState = 'go';
+				window.setTimeout(updateGetReadySplash, 1000);
 			break;
 			case 'go':
 				document.getElementById("go").style.display = 'none';
-				document.getElementById("gameAreaSplash").style.display = 'none';
-				gameAreaSplashState = 'hidden';
+				document.getElementById("getReadySplash").style.display = 'none';
+				getReadySplashState = 'hidden';
 			break;
 		}
 	}
