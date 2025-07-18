@@ -85,9 +85,9 @@
 		<button onclick="setAiMode('frightened')">AI: Frightened</button>
 		<button onclick="setAiMode('atHome')">AI: At Home</button>
 		<button onclick="setAiMode('goHome')">AI: Go Home</button>
-		<button onclick="toggleGhostHouse()">Toggle Ghost House</button>
 		<button onclick="handleDeath()">Die</button>
 		<button onclick="toggleKillable()">Swap Killable</button>
+		<button onclick="toggleEnergised()">Toggle Energised</button>
 	</div>
 	
 <!--	<canvas id="test" width="200" height="200"></canvas>
@@ -117,25 +117,20 @@
 	//clydes weird AI - DONE
 	//ghost scatter AI - DONE
 	//ghost phases - DONE
-	//ghost house
+	//ghost house - DONE
 	//correct pac-mans starting location - DONE
 	//death + lives counter - DONE
 	//resetting the game - DONE
 	//power pellets, engerizers
+	//pac-man energizer running out phase - maybe the ghosts too, dont they flash when coming back from frightened state?
 	//ghost frightened AI - DONE
-	//ghost eaten AI
-	//ghost frightened and eaten phases
-	//levels, difficulty?
+	//ghost eaten AI - DONE
+	//ghost frightened phase - half done, put in the worried face
+	//ghost eaten phase - DONE
+	//in game timer - use to swap ghost ai states?
+	//levels, difficulty? (I currently can't alter the speed of the sprites or pac-man without causing issues with the collision checks. Can i reduce speed and increase frame rate?
 	//score
 	//styling, score display, flashing lights, bells and whistles
-
-	//idea how to the get ghost house to work - at the start of the level, describe the walls as the shape:
-	//|- -|
-	//|   |
-	//|---|
-	//but then after X frames, update the walls array so it becomes the solid block. or in fact just add in a new wall in the top middle.
-	//remember I'll need to swap between these two states for the ghosts eaten mode. So yeah, make a function toggleGhosthouse, which just 
-	//checks the state of the walls elements and updates it accordingly
 	
 	//SET DIRECTION CONSTANTS
 	const UP = 0;
@@ -149,9 +144,11 @@
 	var showCoords = false;
 	var showPacmanPosition = false;
 	var showSpritePosition = false;
+	var showGhostPositions = false;
 	var showGhostAllowedDirections = false;
 	var showGhostsTargetCoords = false;
 	var showKeyInputs = false;
+	var showEnergisedState = true;
 	
 	//CANVAS
 	let canvas = document.getElementById('game');
@@ -166,6 +163,8 @@
 	var deathPhase = 0;
 	var killable = true;
 	var lives = 3;
+	
+	var energiserState = 'none';
 	
 	var walls = [];
 	walls.push({x:0,y:0,w:494,h:26});
@@ -224,6 +223,8 @@
 	walls.push({x:52,y:494,w:156,h:26});
 	walls.push({x:286,y:494,w:156,h:26});
 	walls.push({x:26,y:546,w:468,h:26});
+	//GHOST HOUSE 'DOOR'
+	walls.push({x:234,y:234,w:26,h:26});
 	
 	var pacman = {
 		x: 248,
@@ -231,6 +232,7 @@
 		radius: 10,
 		//BOUNDS HAVE DEFAULT VALUES WHICH WILL BE OVERWRITTEN AS SOON AS updatePosition IS CALLED
 		bounds: {x: 30, y: 30, w: 2, h: 2},
+		energised: false,
 		phase: 0,
 		speed: 5,
 		facing: direction,
@@ -339,6 +341,7 @@
 		bounds = {x: 182, y: 221, w: 18, h: 18};
 		phase = 0;
 		speed = 4;
+		state = 'normal';
 		ai = 'chaser';
 		facing = RIGHT;
 		updatePosition = function(x, y){
@@ -398,27 +401,32 @@
 		reset = function(name){
 			switch(name){
 				case 'blinky':
+					this.ai = 'chaser';
 					this.x = 273;
 					this.y = 273;
 					this.facing = RIGHT;
 				break;
 				case 'pinky':
+					this.ai = 'ambush';
 					this.x = 223;
 					this.y = 273;
 					this.facing = LEFT;				
 				break;
 				case 'inky':
+					this.ai = 'flank';
 					this.x = 248;
 					this.y = 273;
 					this.facing = LEFT;				
 				break;
 				case 'clyde':
+					this.ai = 'clyde';
 					this.x = 248;
 					this.y = 273;
 					this.facing = LEFT;				
 				break;
 			}
 			this.ai = 'atHome';
+			this.state = 'normal';
 		}
 	};
 	
@@ -563,7 +571,25 @@
 			break;
 		}
 		plane.lineTo(pacman.x, pacman.y);
-		plane.fillStyle = '#FFFF00';
+		if(pacman.energised){
+			switch(pacman.phase){
+				case 0:
+					pacmanColour = '#09ff00';
+				break;
+				case 1:
+					pacmanColour = '#00ffe1';
+				break;
+				case 2:
+					pacmanColour = '#0080ff';
+				break;
+				case 3:
+					pacmanColour = '#9d00ff';
+				break;
+			}
+		}else{
+			pacmanColour = '#FFFF00';
+		}
+		plane.fillStyle = pacmanColour;
 		plane.fill();
 		
 		//UPDATE PAC-MANS PHASE ('ANIMATION')
@@ -622,6 +648,19 @@
 				break;
 			}
 		}
+		//ITERATE POWER PELLETS
+		//to-do - finish this
+		/*for(i = 0; i < pellets.length; i++){
+			//CHECKS THE BOUNDS AGAINST THE WALL
+			if(pacman.intersects(pellets[i])){
+				//ENERGISE PAC-MAN
+				pacman.energised = true;
+				//START TIMER
+				//? start a timer, which, when it goes off, turns energised off
+				//NO NEED TO CHECK FURTHER PELLETS
+				break;
+			}
+		}*/
 		//CHECK FLAG
 		if(!collided){
 			//NO COLLISION - UPDATE PAC-MANS POSITION
@@ -676,8 +715,15 @@
 					plane.lineTo((ghosts[i].x - ghosts[i].radius + 20), (ghosts[i].y + ghosts[i].radius - 2));
 				break;
 			}
-			plane.fillStyle = ghosts[i].colour;
-			plane.fill();
+			if(ghosts[i].ai == 'frightened'){
+				plane.fillStyle = 'blue';
+			}else{
+				plane.fillStyle = ghosts[i].colour;
+			}
+			//DONT DRAW GHOST BODIES WHEN THEYVE BEEN EATEN
+			if(ghosts[i].state != 'eaten'){
+				plane.fill();
+			}
 			
 			//UPDATE GHOSTS PHASE ('ANIMATION')
 			if(ghosts[i].phase == 1){
@@ -687,7 +733,11 @@
 			}
 			
 			//DRAW EYES
-			plane.fillStyle = 'white';
+			if(ghosts[i].state == 'eaten'){
+				plane.fillStyle = 'white';
+			}else{
+				plane.fillStyle = 'white';
+			}
 			plane.beginPath();
 			plane.arc(ghosts[i].x - 5, ghosts[i].y - 5, 4, 0, Math.PI * 2);
 			plane.fill();
@@ -695,7 +745,11 @@
 			plane.arc(ghosts[i].x + 5, ghosts[i].y - 5, 4, 0, Math.PI * 2);
 			plane.fill();
 			//DRAW PUPILS
-			plane.fillStyle = 'blue';
+			if(ghosts[i].state == 'eaten'){
+				plane.fillStyle = 'grey';
+			}else{
+				plane.fillStyle = 'blue';
+			}	
 			plane.beginPath();
 			switch(ghosts[i].facing){
 				case UP:
@@ -776,6 +830,10 @@
 				
 				//CHECK WALLS
 				for(w = 0; w < walls.length; w++){
+					//IGNORE FINAL WALL (GHOST HOUSE DOOR) IN SOME CASES
+					if((w == walls.length - 1) && (ghosts[i].ai == 'goHome' || ghosts[i].ai == 'atHome')){
+						continue;
+					}
 					//CHECKS THE BOUNDS AGAINST THE WALL
 					if(ghosts[i].intersects(walls[w])){
 						//DEBUG
@@ -786,9 +844,13 @@
 						break;
 					}
 				}
+				
 				//CHECK PAC-MAN
-				if(killable){
-					if(ghosts[i].intersects(pacman.bounds)){
+				if(ghosts[i].intersects(pacman.bounds)){
+					if(pacman.energised){
+						ghosts[i].state = 'eaten';
+						ghosts[i].ai = 'goHome';
+					}else{
 						//DIE
 						handleDeath();
 						return;
@@ -809,19 +871,19 @@
 			
 			if(allowedDirections.length == 0){
 				switch(ghosts[i].facing){
-				case UP:
-					ghosts[i].facing = DOWN;
-				break;
-				case RIGHT:
-					ghosts[i].facing = LEFT;
-				break;
-				case DOWN:
-					ghosts[i].facing = UP;
-				break;
-				case LEFT:
-					ghosts[i].facing = RIGHT;
-				break;
-			}
+					case UP:
+						ghosts[i].facing = DOWN;
+					break;
+					case RIGHT:
+						ghosts[i].facing = LEFT;
+					break;
+					case DOWN:
+						ghosts[i].facing = UP;
+					break;
+					case LEFT:
+						ghosts[i].facing = RIGHT;
+					break;
+				}
 			}
 			
 			//GHOST IS TO CONTINUE IN THE SAME DIRECTION
@@ -874,7 +936,7 @@
 				break;
 				case 'flank':
 					//THIS AI DRAWS A LINE BETWEEN BLINKY AND PAC-MAN, THEN EXTENDS IT PAST PAC-MAN THE SAME DISTANCE
-					//ANGLE OF LINE BETWEEN BLINKY AND PAC-MAN, IN RADIANS
+					//CALCULATE ANGLE OF LINE BETWEEN BLINKY AND PAC-MAN, IN RADIANS
 					var angle = Math.atan2((pacman.y - ghosts[0].y), (pacman.x - ghosts[0].x));
 
 					//CALCULATE DISTANCE BETWEEN BLINKY AND PAC-MAN
@@ -931,6 +993,40 @@
 				plane.arc(destinationX, destinationY, ghosts[i].radius - 5, 0, 2 * Math.PI); 
 				plane.strokeStyle = ghosts[i].colour;
 				plane.stroke();
+			}
+			
+			//CHECK IF GHOST HAS REACHED TARGET POINT FOR SET AIS
+			if(ghosts[i].ai == 'goHome'){
+				//CHECK IF GHOST REACHES TARGET DESTINATION
+				if(ghosts[i].x >= 223 && ghosts[i].x <= 273 && ghosts[i].y >= 270 && ghosts[i].y <= 276){
+					ghosts[i].state = 'normal';
+					ghosts[i].ai = 'atHome';
+				}
+			}
+			if(ghosts[i].ai == 'atHome'){
+				//CHECK IF GHOST REACHES TARGET DESTINATION
+				if(ghosts[i].x >= 240 && ghosts[i].x <= 253 && ghosts[i].y >= 220 && ghosts[i].y <= 226){
+					switch(ghosts[i].name){
+						case 'blinky':
+							ghosts[i].ai = 'chaser';
+						break;
+						case 'pinky':
+							ghosts[i].ai = 'ambush';
+						break;
+						case 'inky':
+							ghosts[i].ai = 'flank';
+						break;
+						case 'clyde':
+							ghosts[i].ai = 'clyde';
+						break;
+					}
+				}
+			
+			}
+			
+			//DEBUG
+			if(showGhostPositions){
+				console.log(ghosts[i].name + ' is at x: ' + ghosts[i].x + ', y: ' + ghosts[i].y);
 			}
 			
 			//CHANGE BASED ON GHOST AI
@@ -1037,42 +1133,32 @@
 	//--
 	
 	//MINOR UTILITY GAME FUNCTIONS
-	function turnGhostsAround()
+	function turnGhostsAround(option)
 	{
-		for(i = 0; i < ghosts.length; i++){
-			switch(ghosts[i].facing){
-				case UP:
-					ghosts[i].facing = DOWN;
-				break;
-				case RIGHT:
-					ghosts[i].facing = LEFT;
-				break;
-				case DOWN:
-					ghosts[i].facing = UP;
-				break;
-				case LEFT:
-					ghosts[i].facing = RIGHT;
-				break;
+		for(g = 0; g < ghosts.length; g++){
+			if(option == ghosts[g].name || option == 'all'){
+				switch(ghosts[g].facing){
+					case UP:
+						ghosts[g].facing = DOWN;
+					break;
+					case RIGHT:
+						ghosts[g].facing = LEFT;
+					break;
+					case DOWN:
+						ghosts[g].facing = UP;
+					break;
+					case LEFT:
+						ghosts[g].facing = RIGHT;
+					break;
+				}
 			}
-		}
-	}
-	
-	function toggleGhostHouse()
-	{
-		//COUNT WALLS
-		if(walls.length == 54){
-			//BLOCK OFF GHOST HOUSE
-			walls.push({x:234,y:234,w:26,h:26});
-		}else{
-			//OPEN GHOST HOUSE
-			walls.pop();
 		}
 	}
 	
 	function toggleKillable()
 	{
 		killable = !killable;
-		//console.log('Killable: ' + killable);
+		console.log('Killable: ' + killable);
 	}
 	
 	function handleDeath()
@@ -1183,40 +1269,71 @@
 	
 	//--
 	
+	function toggleEnergised()
+	{
+		switch(energiserState){
+			case 'none':				
+				//TOGGLE PAC-MAN ENERGISED STATE
+				pacman.energised = !pacman.energised;
+				//SET GHOSTS AI
+				setAiMode('frightened');
+				//UPDATE ENERGISER STATE
+				energiserState = 'on';
+				//CALL FUNCTION AGAIN
+				window.setTimeout(toggleEnergised, 5000);
+			break;
+			case 'on':
+				//UPDATE ENERGISER STATE
+				energiserState = 'runningOut';
+				//CALL FUNCTION AGAIN
+				window.setTimeout(toggleEnergised, 3000);
+			break;
+			case 'runningOut':
+				//TOGGLE PAC-MAN ENERGISED STATE
+				pacman.energised = !pacman.energised;
+				//UPDATE ENERGISER STATE
+				energiserState = 'none';
+				//SET GHOSTS AI
+				setAiMode('chase');
+			break;
+		}
+		if(showEnergisedState){
+			console.log('Energised: ' + pacman.energised + ', energiserState: ' + energiserState);
+			console.log(energiserState);
+		}
+	}
+	
 	function setAiMode(mode)
 	{
 		//GHOSTS TURN AROUND - will this happen on every AI switch? maybe not when switching to eaten mode? 
 		//but then can just move this call into the switch block
-		turnGhostsAround();
+		turnGhostsAround('all');
 		
-		switch(mode){
-			case 'atHome':
-				for(i = 0; i < ghosts.length; i++){
-					ghosts[i].ai = 'atHome';
+		for(i = 0; i < ghosts.length; i++){
+			//IGNORE AI CHANGES FOR EATEN GHOSTS, THEIR AI WILL BE UPDATED WHEN THEY GET TO THE GHOST HOUSE
+			//THIS PREVENTS ISSUES WITH GHOSTS BECOMING STUCK IN EATEN OR FRIGHTENED STATES WHEN THE ENGERGISER STATE CHANGES
+			if(ghosts[i].ai != 'goHome'){
+				//CHASE AI IS GHOST SPECIFIC
+				if(mode == 'chase'){
+					switch(ghosts[i].name){
+						case 'blinky':
+							ghosts[i].ai = 'chaser';
+						break;
+						case 'pinky':
+							ghosts[i].ai = 'ambush';
+						break;
+						case 'inky':
+							ghosts[i].ai = 'flank';
+						break;
+						case 'clyde':
+							ghosts[i].ai = 'clyde';
+						break;
+					}
+				}else{
+					//SET ALL GHOSTS AI TO MODE
+					ghosts[i].ai = mode;
 				}
-			break;
-			case 'goHome':
-				for(i = 0; i < ghosts.length; i++){
-					ghosts[i].ai = 'goHome';
-				}
-			break;
-			case 'chase':
-				//SET GHOSTS TO THEIR SPECIFIC AIS
-				ghosts[0].ai = 'chaser';
-				ghosts[1].ai = 'ambush';
-				ghosts[2].ai = 'flank';
-				ghosts[3].ai = 'clyde';
-			break;
-			case 'scatter':
-				for(i = 0; i < ghosts.length; i++){
-					ghosts[i].ai = 'scatter';
-				}
-			break;
-			case 'frightened':
-				for(i = 0; i < ghosts.length; i++){
-					ghosts[i].ai = 'frightened';
-				}
-			break;
+			}
 		}
 	}
 	
@@ -1317,9 +1434,6 @@
 		//this will be used to dynamically update the ghosts AI as the level progresses
 		//so the ghosts start off in atHome AI, then update as soon as they all leave the ghosthouse, closing the ghost house and changing AI to chaser
 		//then as the level progresses they will swap between scatter and chase
-		//although im still not sure how i'll cope with opening and shutting the ghost house when the ghosts get eaten
-		//just check when the ghosts are in their starting positions and if they're in the ghost house, change their ai to atHome, wait a second and close it?? 
-		//will be buggy when other ghosts are also eaten and moving in/out of the ghost house :/
 		
 	}
 	
@@ -1332,6 +1446,8 @@
 		//document.getElementById('gameOver').style.display = 'block';
 		
 	}
+	
+	//--
 	
 	//CREATES A SPLASH SCREEN THAT DISPLAYS GAME OVER
 	function updateLivesCounter(lives)
