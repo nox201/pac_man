@@ -3,6 +3,13 @@
 <html>
 	<head>
 		<style>
+			body {
+				background-color: black;
+				font-family: "Brush Script MT", cursive;
+				font-weight: 900;
+				
+				
+			}
 			#game {
 				background-color: black;
 			}
@@ -10,20 +17,27 @@
 				text-align: center;
 				height: 600px;
 			}
-			.header {
-				<!-- margin-top: 100px; -->
+			#header {
+				height: 100px;
+				text-align: center;
 			}
-			#getReadySplash{
+			#logo {
+				height: 100px;
+			}
+			.pacman-image {
+				height: 100px;	
+			}
+			#getReadySplash {
 				display: none;
-				position: sticky;
+				position: fixed;
 				margin-top: -400px;
-				margin-left: 38%;
+				/*margin-left: 38%;*/
 				width: 24%;
 				color: white;
 				background-color: blue;
 				z-index: 1;
 			}
-			#gameOverSplash{
+			#gameOverSplash {
 				display: none;
 				position: sticky;
 				margin-top: -400px;
@@ -37,44 +51,66 @@
 				text-align: center;
 			}
 			#gameArea {
-				width; 34%;
-				display: inline-block;
+				width: 34%;
+				background: linear-gradient(-45deg, #ee7752, #f8ed4e, #23a6d5, #23d5ab);
+				background-size: 400% 400%;
+				animation: gradient 10s ease infinite;
+				z-index: 1000;
+				padding: 10px;
+			}
+			@keyframes gradient {
+				0% {background-position: 0% 50%;}
+				50% {background-position: 100% 50%;}
+				100% {background-position: 0% 50%;}
 			}
 			#infoLeft {
-				background-color: green;
+				color: yellow;
 				width: 33%;
-				display: inline-block;
+				font-size: 40px;
 			}
 			#infoRight {
-				background-color: green;
+				color: yellow;
 				width: 33%;
-				display: inline-block;
+				font-size: 40px;
 			}
 		</style>
 	</head>
 </html>
 
-<body style="background-color: grey">
+<body>
+	<div id="header">
+		<img class="pacman-image" src="pacman.png">
+		<img class="pacman-image" src="pacman.png">
+		<img class="pacman-image" src="pacman.png">
+		<img class="pacman-image" src="pacman.png">
+		<img id="logo" src="logo.png">
+		<img class="pacman-image" src="pacman-reversed.png">
+		<img class="pacman-image" src="pacman-reversed.png">
+		<img class="pacman-image" src="pacman-reversed.png">
+		<img class="pacman-image" src="pacman-reversed.png">
+	</div>
 	<div class="container">
-		<div class="header">
 
-		</div>
-		<div id="infoLeft">
-			<p>LIVES</p>
-			<p id="livesCounter"></p>
-		</div>
-		<div id="gameArea">
-			<canvas id="game" width="494" height="572"></canvas>
-			<div id="getReadySplash">
-				<p id="ready">Ready</p>
-				<p id="set">Set</p>
-				<p id="go">Go!</p>
-			</div>
-		</div>
-		<div id="infoRight">
-			<p>SCORE</p>
-			<p>1234</p>
-		</div>
+		<table>
+			<tr>
+				<td id="infoLeft">
+					<p>LIVES</p>
+					<p id="livesCounter"></p>
+				</td>
+				<td id="gameArea">
+					<canvas id="game" width="494" height="572"></canvas>
+					<div id="getReadySplash">
+						<p id="ready">Ready</p>
+						<p id="set">Set</p>
+						<p id="go">Go!</p>
+					</div>
+				</td>
+				<td id="infoRight">
+					<p>SCORE</p>
+					<p>1234</p>
+				</td>
+			</tr>
+		</table>
 	</div>
 	<div id="controls">
 		<button onclick="startGame()">Start</button>
