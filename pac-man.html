@@ -63,15 +63,25 @@
 				50% {background-position: 100% 50%;}
 				100% {background-position: 0% 50%;}
 			}
-			#infoLeft {
+			.info {
+				background-color: black;
 				color: yellow;
 				width: 33%;
 				font-size: 40px;
+				margin-left: 25%;
 			}
-			#infoRight {
-				color: yellow;
-				width: 33%;
-				font-size: 40px;
+			.infoBorder {
+				width: 50%;
+				margin-left: 25%;
+				background: linear-gradient(145deg, #000000, #000000, #FFFFFF, #000000);
+				background-size: 400% 400%;
+				animation: gradient 10s ease infinite;
+				z-index: 1000;
+				padding: 10px;
+			}
+			.infoInterior {
+				background-color: black;
+				margin: 5px;
 			}
 		</style>
 	</head>
@@ -93,9 +103,13 @@
 
 		<table>
 			<tr>
-				<td id="infoLeft">
-					<p>LIVES</p>
-					<p id="livesCounter"></p>
+				<td class="info">
+					<div class="infoBorder">
+						<div class="infoInterior">
+							<p class="infoText">LIVES</p>
+							<p id="livesCounter"></p>
+						</div>
+					</div>
 				</td>
 				<td id="gameArea">
 					<canvas id="game" width="494" height="572"></canvas>
@@ -105,9 +119,15 @@
 						<p id="go">Go!</p>
 					</div>
 				</td>
-				<td id="infoRight">
-					<p>SCORE</p>
-					<p>1234</p>
+				<td class="info">
+					<div class="infoBorder">
+						<div class="infoInterior">
+							<p>LEVEL</p>
+							<p id="levelCounter">-</p>
+							<p>SCORE</p>
+							<p id="scoreCounter">-</p>
+						</div>
+					</div>
 				</td>
 			</tr>
 		</table>
