@@ -179,6 +179,7 @@
 	<div id="controls">
 		<button onclick="startGame()">Start</button>
 		<button onclick="setFrameRate('pause')">Pause</button>
+		<button onclick="setFrameRate('fast')">Unpause</button>
 		<button onclick="draw()">Single Frame</button>
 		<button onclick="setAiMode('chase')">AI: Chase</button>
 		<button onclick="setAiMode('scatter')">AI: Scatter</button>
@@ -221,16 +222,17 @@
 	//correct pac-mans starting location - DONE
 	//death + lives counter - DONE
 	//resetting the game - DONE
-	//power pellets, engerizers
+	//engerizers
+	//cookies - DONE
 	//pac-man energizer running out phase - maybe the ghosts too, dont they flash when coming back from frightened state?
 	//ghost frightened AI - DONE
 	//ghost eaten AI - DONE
 	//ghost frightened phase - half done, put in the worried face
 	//ghost eaten phase - DONE
 	//in game timer - use to swap ghost ai states?
+	//associated with the above - i need a way to stop the ghosts all swarming pac-man straight out the gate. The original game delays when they leave the ghost house, maybe I use the timer to start the ghosts in scatter mode. Then in later levels swap it to like it is now. 
 	//levels, difficulty? (I currently can't alter the speed of the sprites or pac-man without causing issues with the collision checks. Can i reduce speed and increase frame rate?
-	//score
-	//styling, score display, flashing lights, bells and whistles
+	//styling, more flashy score display, flashing lights, bells and whistles
 	//have a picture of a joystick like you'd get on a real arcade cabinet, place it underneath the lives counter and everytime the user presses a direction, update the picture so 
 	//its like the user is pushing the joystick.
 	
@@ -333,6 +335,9 @@
 	walls.push({x:26,y:546,w:468,h:26});
 	//GHOST HOUSE 'DOOR'
 	walls.push({x:234,y:234,w:26,h:26});
+	
+	//COOKIES
+	cookies = [];
 	
 	var pacman = {
 		x: 248,
@@ -610,6 +615,9 @@
 		
 		//DRAW THE WALLS
 		drawWalls();
+		
+		//DRAW THE COOKIES
+		drawCookies();
 
 		//MOVE PAC-MAN
 		movePacman();
@@ -631,6 +639,15 @@
 			plane.rect(walls[i].x, walls[i].y, walls[i].w, walls[i].h);
 			plane.strokeStyle = '#FFF';
 			plane.stroke();
+		}
+	}
+	
+	function drawCookies(){
+		for(i = 0; i < cookies.length; i++){
+			plane.beginPath();
+			plane.arc(cookies[i].x, cookies[i].y, 2, 0, 6.3);
+			plane.fillStyle = '#FFF';
+			plane.fill();
 		}
 	}
 	
@@ -753,6 +770,18 @@
 				//SET FLAG
 				collided = true;
 				//NO NEED TO CHECK FURTHER WALLS
+				break;
+			}
+		}
+		//ITERATE COOKIES
+		for(i = 0; i < cookies.length; i++){
+			//CHECKS THE BOUNDS - INTERSECTS EXPECTS H AND W BUT COOKIES ONLY HAVE X AND Y SO HARDCODE SMALL VALUES
+			if(pacman.intersects({x: cookies[i].x, y: cookies[i].y, h: 1, w: 1})){
+				//DELETE COOKIE
+				cookies.splice(i, 1);
+				//INCREMENT SCORE
+				updateScore(10);
+				//NO NEED TO CHECK FURTHER COOKIES
 				break;
 			}
 		}
@@ -1451,6 +1480,172 @@
 		}
 	}
 	
+	//THIS FUNCTION COULD BE REWRITTEN TO ITERATE X AND Y COORDS IN INCREMENTS OF 26, AND THEN CHECK AGAINST AN ARRAY OF LOCATIONS THAT DON'T HAVE COOKIES
+	//PROBABLY WOULD TAKE A LOT LESS LINES
+	function resetCookies()
+	{
+		//EMPTY EXISTING COOKIES
+		cookies = [];
+		cookies.push({x:38,y:38});
+		cookies.push({x:64,y:38});
+		cookies.push({x:90,y:38});
+		cookies.push({x:116,y:38});
+		cookies.push({x:142,y:38});
+		cookies.push({x:168,y:38});
+		cookies.push({x:194,y:38});
+		cookies.push({x:220,y:38});
+		cookies.push({x:272,y:38});
+		cookies.push({x:298,y:38});
+		cookies.push({x:324,y:38});
+		cookies.push({x:350,y:38});
+		cookies.push({x:376,y:38});
+		cookies.push({x:402,y:38});
+		cookies.push({x:428,y:38});
+		cookies.push({x:453,y:38});
+		cookies.push({x:38,y:64});
+		cookies.push({x:116,y:64});
+		cookies.push({x:220,y:64});
+		cookies.push({x:272,y:64});
+		cookies.push({x:376,y:64});
+		cookies.push({x:453,y:64});
+		cookies.push({x:38,y:90});
+		cookies.push({x:116,y:90});
+		cookies.push({x:220,y:90});
+		cookies.push({x:272,y:90});
+		cookies.push({x:376,y:90});
+		cookies.push({x:453,y:90});
+		cookies.push({x:38,y:116});
+		cookies.push({x:64,y:116});
+		cookies.push({x:90,y:116});
+		cookies.push({x:116,y:116});
+		cookies.push({x:142,y:116});
+		cookies.push({x:168,y:116});
+		cookies.push({x:194,y:116});
+		cookies.push({x:220,y:116});
+		cookies.push({x:246,y:116});
+		cookies.push({x:272,y:116});
+		cookies.push({x:298,y:116});
+		cookies.push({x:324,y:116});
+		cookies.push({x:350,y:116});
+		cookies.push({x:376,y:116});
+		cookies.push({x:402,y:116});
+		cookies.push({x:428,y:116});
+		cookies.push({x:453,y:116});
+		cookies.push({x:38,y:142});
+		cookies.push({x:116,y:142});
+		cookies.push({x:168,y:142});
+		cookies.push({x:324,y:142});
+		cookies.push({x:376,y:142});
+		cookies.push({x:453,y:142});
+		cookies.push({x:38,y:168});
+		cookies.push({x:64,y:168});
+		cookies.push({x:90,y:168});
+		cookies.push({x:116,y:168});
+		cookies.push({x:168,y:168});
+		cookies.push({x:194,y:168});
+		cookies.push({x:220,y:168});
+		cookies.push({x:272,y:168});
+		cookies.push({x:298,y:168});
+		cookies.push({x:324,y:168});
+		cookies.push({x:376,y:168});
+		cookies.push({x:402,y:168});
+		cookies.push({x:428,y:168});
+		cookies.push({x:453,y:168});
+		cookies.push({x:116,y:194});
+		cookies.push({x:376,y:194});
+		cookies.push({x:116,y:220});
+		cookies.push({x:376,y:220});
+		cookies.push({x:116,y:246});
+		cookies.push({x:376,y:246});
+		cookies.push({x:116,y:272});
+		cookies.push({x:376,y:272});
+		cookies.push({x:116,y:298});
+		cookies.push({x:376,y:298});
+		cookies.push({x:116,y:324});
+		cookies.push({x:376,y:324});
+		cookies.push({x:116,y:350});
+		cookies.push({x:376,y:350});
+		cookies.push({x:38,y:376});
+		cookies.push({x:64,y:376});
+		cookies.push({x:90,y:376});
+		cookies.push({x:116,y:376});
+		cookies.push({x:142,y:376});
+		cookies.push({x:168,y:376});
+		cookies.push({x:194,y:376});
+		cookies.push({x:220,y:376});
+		cookies.push({x:272,y:376});
+		cookies.push({x:298,y:376});
+		cookies.push({x:324,y:376});
+		cookies.push({x:350,y:376});
+		cookies.push({x:376,y:376});
+		cookies.push({x:402,y:376});
+		cookies.push({x:428,y:376});
+		cookies.push({x:453,y:376});
+		cookies.push({x:38,y:402});
+		cookies.push({x:116,y:402});
+		cookies.push({x:220,y:402});
+		cookies.push({x:272,y:402});
+		cookies.push({x:376,y:402});
+		cookies.push({x:453,y:402});
+		cookies.push({x:38,y:428});
+		cookies.push({x:64,y:428});
+		cookies.push({x:116,y:428});
+		cookies.push({x:142,y:428});
+		cookies.push({x:168,y:428});
+		cookies.push({x:194,y:428});
+		cookies.push({x:220,y:428});
+		cookies.push({x:272,y:428});
+		cookies.push({x:298,y:428});
+		cookies.push({x:324,y:428});
+		cookies.push({x:350,y:428});
+		cookies.push({x:376,y:428});
+		cookies.push({x:428,y:428});
+		cookies.push({x:453,y:428});
+		cookies.push({x:64,y:453});
+		cookies.push({x:116,y:453});
+		cookies.push({x:168,y:453});
+		cookies.push({x:324,y:453});
+		cookies.push({x:376,y:453});
+		cookies.push({x:428,y:453});
+		cookies.push({x:38,y:479});
+		cookies.push({x:64,y:479});
+		cookies.push({x:90,y:479});
+		cookies.push({x:116,y:479});
+		cookies.push({x:168,y:479});
+		cookies.push({x:194,y:479});
+		cookies.push({x:220,y:479});
+		cookies.push({x:272,y:479});
+		cookies.push({x:298,y:479});
+		cookies.push({x:324,y:479});
+		cookies.push({x:376,y:479});
+		cookies.push({x:402,y:479});
+		cookies.push({x:428,y:479});
+		cookies.push({x:453,y:479});
+		cookies.push({x:38,y:504});
+		cookies.push({x:220,y:504});
+		cookies.push({x:272,y:504});
+		cookies.push({x:453,y:504});
+		cookies.push({x:38,y:533});
+		cookies.push({x:64,y:533});
+		cookies.push({x:90,y:533});
+		cookies.push({x:116,y:533});
+		cookies.push({x:142,y:533});
+		cookies.push({x:168,y:533});
+		cookies.push({x:194,y:533});
+		cookies.push({x:220,y:533});
+		cookies.push({x:246,y:533});
+		cookies.push({x:272,y:533});
+		cookies.push({x:298,y:533});
+		cookies.push({x:324,y:533});
+		cookies.push({x:350,y:533});
+		cookies.push({x:376,y:533});
+		cookies.push({x:402,y:533});
+		cookies.push({x:428,y:533});
+		cookies.push({x:453,y:533});
+	}
+	
+	
+	
 	//--
 	
 	function getLength(p1x, p1y, p2x, p2y)
@@ -1518,6 +1713,10 @@
 	//CALL THIS TO CLEAR THE BOARD, START A NEW GAME
 	function newGame()
 	{
+	
+		//REMOVE GAME OVER SPLASH
+		document.getElementById('gameOverSplash').style.display = 'none';
+		
 		//CLEAR CANVAS
 		plane.clearRect(0,0,canvas.width,canvas.height);
 
@@ -1525,7 +1724,11 @@
 		lives = 3;
 		updateLivesCounter(lives);
 		
+		//RESET COOKIES
+		resetCookies();
+		
 		//RESET SCORE
+		updateScore(-score);
 		
 		//RESET LEVEL
 		
@@ -1579,10 +1782,12 @@
 	{
 		//STOP REPEATER
 		setFrameRate('pause');
+		//SET GAME STATE
+		state = 'gameOver';
 		//DISPLAY GAME OVER DIV
 		document.getElementById('gameOverSplash').style.display = 'block';
 		//to-do finish this by putting in the right data
-		document.getElementById('gameOverText').innerHTML = 'You died! You reached level X, scored X points and were playing for X seconds.';
+		document.getElementById('gameOverText').innerHTML = 'You died! You reached level X, scored ' + score + ' points and were playing for X seconds.';
 	}
 	
 	//--
@@ -1601,6 +1806,13 @@
 				}
 			break;
 		}
+	}
+	
+	//UPDATES THE SCORE
+	function updateScore(points)
+	{
+		score += points;
+		document.getElementById('scoreCounter').innerHTML = score;
 	}
 	
 	//CREATES A SPLASH SCREEN THAT DISPLAYS GAME OVER
