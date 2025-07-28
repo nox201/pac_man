@@ -63,6 +63,7 @@
 				z-index: 1000;
 				padding: 10px;
 				text-align: center;
+				border-radius: 20px;
 			}
 			@keyframes gradient {
 				0% {background-position: 0% 50%;}
@@ -222,9 +223,9 @@
 	//correct pac-mans starting location - DONE
 	//death + lives counter - DONE
 	//resetting the game - DONE
-	//engerizers
+	//engerizers - in progress, need to make pac-man interact with them, become energised, gain 50 score
 	//cookies - DONE
-	//pac-man energizer running out phase - maybe the ghosts too, dont they flash when coming back from frightened state?
+	//pac-man energiser running out phase - maybe the ghosts too, dont they flash when coming back from frightened state?
 	//ghost frightened AI - DONE
 	//ghost eaten AI - DONE
 	//ghost frightened phase - half done, put in the worried face
@@ -232,13 +233,15 @@
 	//in game timer - use to swap ghost ai states?
 	//associated with the above - i need a way to stop the ghosts all swarming pac-man straight out the gate. The original game delays when they leave the ghost house, maybe I use the timer to start the ghosts in scatter mode. Then in later levels swap it to like it is now. 
 	//levels, difficulty? (I currently can't alter the speed of the sprites or pac-man without causing issues with the collision checks. Can i reduce speed and increase frame rate?
+	
+	//NICE-TO-HAVES:
 	//styling, more flashy score display, flashing lights, bells and whistles
 	//have a picture of a joystick like you'd get on a real arcade cabinet, place it underneath the lives counter and everytime the user presses a direction, update the picture so 
 	//its like the user is pushing the joystick.
+	//nemisis system - at the end of the game, tell the player which ghost killed them the most, and how their AI works.
 	
 	//BUGS 
 	//when you pause the game first time it works, but after that pausing doesn't stop the frame rate?
-	//ghosts can still kill you even in the eaten state
 	
 	//SET DIRECTION CONSTANTS
 	const UP = 0;
@@ -250,7 +253,7 @@
 	//DEBUG OPTIONS
 	var drawBounds = false;
 	var showCoords = false;
-	var showPacmanPosition = false;
+	var showPacmanPosition = true;
 	var showSpritePosition = false;
 	var showGhostPositions = false;
 	var showGhostAllowedDirections = false;
@@ -262,8 +265,9 @@
 	let canvas = document.getElementById('game');
 	let plane = canvas.getContext("2d");
 	
-	
+	//POPUP/SPLASH VARIABLES
 	let getReadySplashState = 'hidden';
+	
 	//GAME VARIABLES
 	let state = 'gameOver';
 	var score = 0;
@@ -273,8 +277,10 @@
 	var killable = true;
 	var lives = 3;
 	var easterEgg = '';
-	
 	var energiserState = 'none';
+	var cookies = [];
+	var energisers = [];
+	var ghosts = []
 	
 	var walls = [];
 	walls.push({x:0,y:0,w:494,h:26});
@@ -335,9 +341,6 @@
 	walls.push({x:26,y:546,w:468,h:26});
 	//GHOST HOUSE 'DOOR'
 	walls.push({x:234,y:234,w:26,h:26});
-	
-	//COOKIES
-	cookies = [];
 	
 	var pacman = {
 		x: 248,
@@ -543,13 +546,6 @@
 		}
 	};
 	
-	//CREATE GHOSTS
-	var ghosts = []
-	ghosts.push(new Sprite('blinky', '#FF0000', 273, 273, 10, 4, 'chaser', RIGHT, 0));
-	ghosts.push(new Sprite('pinky', '#fc9ff9', 223, 273, 10, 4, 'ambush', LEFT, 1));
-	ghosts.push(new Sprite('inky', '#00fff2', 248, 273, 10, 4, 'flank', LEFT, 0));
-	ghosts.push(new Sprite('clyde', '#fcba03', 248, 273, 10, 4, 'clyde', LEFT, 1));
-	
 	//--
 	
 	//ADD KEY EVENT LISTENERS
@@ -618,6 +614,9 @@
 		
 		//DRAW THE COOKIES
 		drawCookies();
+		
+		//DRAW THE ENERGISERS
+		drawEnergisers();
 
 		//MOVE PAC-MAN
 		movePacman();
@@ -647,6 +646,15 @@
 			plane.beginPath();
 			plane.arc(cookies[i].x, cookies[i].y, 2, 0, 6.3);
 			plane.fillStyle = '#FFF';
+			plane.fill();
+		}
+	}
+	
+	function drawEnergisers(){
+		for(i = 0; i < energisers.length; i++){
+			plane.beginPath();
+			plane.arc(energisers[i].x, energisers[i].y, 5, 0, 6.3);
+			plane.fillStyle = 'orange';
 			plane.fill();
 		}
 	}
@@ -1296,6 +1304,38 @@
 		}
 	}
 	
+	//THIS FUNCTION ALLOWS FOR THE CREATION OF GHOSTS TO BE STAGGERED AFTER THE LEVEL STARTS, MAKING SURE THE PLAYER ISNT SWARMED BY ALL THE GHOSTS AT ONCE
+	function spawnGhosts()
+	{
+		console.log('spawn ghosts called');
+		let keepSpawning = false;
+		//CHECK NUMBER OF GHOSTS
+		switch(ghosts.length){
+			case 0:
+				ghosts.push(new Sprite('blinky', '#FF0000', 273, 273, 10, 4, 'atHome', RIGHT, 0));
+				keepSpawning = true;
+			break;
+			case 1:
+				ghosts.push(new Sprite('pinky', '#fc9ff9', 223, 273, 10, 4, 'atHome', LEFT, 1));
+				keepSpawning = true;
+			break;
+			case 2:
+				ghosts.push(new Sprite('inky', '#00fff2', 248, 273, 10, 4, 'atHome', LEFT, 0));
+				keepSpawning = true;
+			break;
+			case 3:
+				ghosts.push(new Sprite('clyde', '#fcba03', 248, 273, 10, 4, 'atHome', LEFT, 1));
+				keepSpawning = false;
+			break;
+			case 4:
+				keepSpawning = false;
+			break;
+		}
+		if(keepSpawning){
+			window.setTimeout(spawnGhosts, 2000);
+		}
+	}
+	
 	function toggleKillable()
 	{
 		killable = !killable;
@@ -1480,6 +1520,16 @@
 		}
 	}
 	
+	function resetEnergisers()
+	{
+		//EMPTY EXISTING ENERGISERS
+		energisers = [];
+		energisers.push({x:38,y:90});
+		energisers.push({x:453,y:90});
+		energisers.push({x:38,y:428});
+		energisers.push({x:453,y:428});
+	}
+	
 	//THIS FUNCTION COULD BE REWRITTEN TO ITERATE X AND Y COORDS IN INCREMENTS OF 26, AND THEN CHECK AGAINST AN ARRAY OF LOCATIONS THAT DON'T HAVE COOKIES
 	//PROBABLY WOULD TAKE A LOT LESS LINES
 	function resetCookies()
@@ -1508,12 +1558,12 @@
 		cookies.push({x:272,y:64});
 		cookies.push({x:376,y:64});
 		cookies.push({x:453,y:64});
-		cookies.push({x:38,y:90});
+		//cookies.push({x:38,y:90});
 		cookies.push({x:116,y:90});
 		cookies.push({x:220,y:90});
 		cookies.push({x:272,y:90});
 		cookies.push({x:376,y:90});
-		cookies.push({x:453,y:90});
+		//cookies.push({x:453,y:90});
 		cookies.push({x:38,y:116});
 		cookies.push({x:64,y:116});
 		cookies.push({x:90,y:116});
@@ -1587,7 +1637,7 @@
 		cookies.push({x:272,y:402});
 		cookies.push({x:376,y:402});
 		cookies.push({x:453,y:402});
-		cookies.push({x:38,y:428});
+		//cookies.push({x:38,y:428});
 		cookies.push({x:64,y:428});
 		cookies.push({x:116,y:428});
 		cookies.push({x:142,y:428});
@@ -1600,7 +1650,7 @@
 		cookies.push({x:350,y:428});
 		cookies.push({x:376,y:428});
 		cookies.push({x:428,y:428});
-		cookies.push({x:453,y:428});
+		//cookies.push({x:453,y:428});
 		cookies.push({x:64,y:453});
 		cookies.push({x:116,y:453});
 		cookies.push({x:168,y:453});
@@ -1726,6 +1776,8 @@
 		
 		//RESET COOKIES
 		resetCookies();
+		//RESET ENERGISERS
+		resetEnergisers();
 		
 		//RESET SCORE
 		updateScore(-score);
@@ -1750,9 +1802,8 @@
 		drawPacman();
 		
 		//RESET GHOSTS
-		for(i = 0; i < ghosts.length; i++){
-			ghosts[i].reset(ghosts[i].name);
-		}
+		ghosts = [];
+		window.setTimeout(spawnGhosts, 3000);
 		
 		//DRAW FIRST FRAME
 		draw();
