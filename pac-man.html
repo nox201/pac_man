@@ -223,25 +223,27 @@
 	//correct pac-mans starting location - DONE
 	//death + lives counter - DONE
 	//resetting the game - DONE
-	//engerizers - in progress, need to make pac-man interact with them, become energised, gain 50 score
+	//engerizers - DONE
 	//cookies - DONE
-	//pac-man energiser running out phase - maybe the ghosts too, dont they flash when coming back from frightened state?
+	//pac-man/ghost energiser running out phase - DONE
 	//ghost frightened AI - DONE
 	//ghost eaten AI - DONE
 	//ghost frightened phase - half done, put in the worried face
 	//ghost eaten phase - DONE
+	//score number appear on screen when a ghost is eaten
 	//in game timer - use to swap ghost ai states?
-	//associated with the above - i need a way to stop the ghosts all swarming pac-man straight out the gate. The original game delays when they leave the ghost house, maybe I use the timer to start the ghosts in scatter mode. Then in later levels swap it to like it is now. 
 	//levels, difficulty? (I currently can't alter the speed of the sprites or pac-man without causing issues with the collision checks. Can i reduce speed and increase frame rate?
 	
 	//NICE-TO-HAVES:
 	//styling, more flashy score display, flashing lights, bells and whistles
-	//have a picture of a joystick like you'd get on a real arcade cabinet, place it underneath the lives counter and everytime the user presses a direction, update the picture so 
-	//its like the user is pushing the joystick.
+	//have a picture of a joystick like you'd get on a real arcade cabinet, place it underneath the lives counter and everytime the user presses a direction, update the picture so its like the user is pushing the joystick.
 	//nemisis system - at the end of the game, tell the player which ghost killed them the most, and how their AI works.
 	
 	//BUGS 
-	//when you pause the game first time it works, but after that pausing doesn't stop the frame rate?
+	//ghosts can get stuck in the ghost house door when eating energisers and other situations
+	//I cant change the speed of anything due to how I've made the maze - if its too fast nothing realizes it can turn a corner because there aren't enough pixels in the gap so the ghost travels past it. Can i change speed to 1 for everything but up the frame rate? And will this work given pac-man should be slightly faster than the ghosts? What I want is the ghosts to travel really fast when they've been eaten. 
+	//this doesn't work - it runs fine at higher refresh rates but pac-man gets stuck in walls. 
+	//AH - DO I DISCONNECT THE SPEED FROM HOW FAR AHEAD THE BOUNDS LOOKS??? GHOSTS AT 4, PAC-MAN AT 5, BUT THEY CAN MOVE 1/2/3 ETC?
 	
 	//SET DIRECTION CONSTANTS
 	const UP = 0;
@@ -251,9 +253,10 @@
 	const directions = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
 	
 	//DEBUG OPTIONS
+	var showDrawLoops = false;
 	var drawBounds = false;
 	var showCoords = false;
-	var showPacmanPosition = true;
+	var showPacmanPosition = false;
 	var showSpritePosition = false;
 	var showGhostPositions = false;
 	var showGhostAllowedDirections = false;
@@ -281,6 +284,7 @@
 	var cookies = [];
 	var energisers = [];
 	var ghosts = []
+	var eatenCombo = 1;
 	
 	var walls = [];
 	walls.push({x:0,y:0,w:494,h:26});
@@ -592,7 +596,9 @@
 	function draw(){
 		
 		//DEBUG
-		console.log('drawn');
+		if(showDrawLoops){
+			console.log('drawn');
+		}
 		
 		//CLEAR PREVIOUS
 		plane.clearRect(0,0,canvas.width,canvas.height);
@@ -705,18 +711,38 @@
 		}
 		plane.lineTo(pacman.x, pacman.y);
 		if(pacman.energised){
-			switch(pacman.phase){
-				case 0:
-					pacmanColour = '#09ff00';
+			switch(energiserState){
+				case 'on':
+					switch(pacman.phase){
+						case 0:
+							pacmanColour = '#09ff00';
+						break;
+						case 1:
+							pacmanColour = '#00ffe1';
+						break;
+						case 2:
+							pacmanColour = '#0080ff';
+						break;
+						case 3:
+							pacmanColour = '#9d00ff';
+						break;
+					}
 				break;
-				case 1:
-					pacmanColour = '#00ffe1';
-				break;
-				case 2:
-					pacmanColour = '#0080ff';
-				break;
-				case 3:
-					pacmanColour = '#9d00ff';
+				case 'runningOut':
+					switch(pacman.phase){
+						case 0:
+							pacmanColour = '#fa4b62';
+						break;
+						case 1:
+							pacmanColour = '#ff4a89';
+						break;
+						case 2:
+							pacmanColour = '#ff4acf';
+						break;
+						case 3:
+							pacmanColour = '#ffa640';
+						break;
+					}
 				break;
 			}
 		}else{
@@ -793,19 +819,23 @@
 				break;
 			}
 		}
-		//ITERATE POWER PELLETS
-		//to-do - finish this
-		/*for(i = 0; i < pellets.length; i++){
-			//CHECKS THE BOUNDS AGAINST THE WALL
-			if(pacman.intersects(pellets[i])){
+		//ITERATE ENERGISERS
+		for(i = 0; i < energisers.length; i++){
+			//CHECKS THE BOUNDS - INTERSECTS EXPECTS H AND W BUT ENERGISERS ONLY HAVE X AND Y SO HARDCODE SMALL VALUES
+			if(pacman.intersects({x: energisers[i].x, y: energisers[i].y, h: 5, w: 5})){
+				//DELETE ENERGISER
+				energisers.splice(i, 1);
 				//ENERGISE PAC-MAN
-				pacman.energised = true;
-				//START TIMER
-				//? start a timer, which, when it goes off, turns energised off
-				//NO NEED TO CHECK FURTHER PELLETS
+				if(showEnergisedState){
+					console.log('pacman ate an energiser');
+				}
+				toggleEnergised();
+				//INCREMENT SCORE
+				updateScore(50);
+				//NO NEED TO CHECK FURTHER ENERGISERS
 				break;
 			}
-		}*/
+		}
 		//CHECK FLAG
 		if(!collided){
 			//NO COLLISION - UPDATE PAC-MANS POSITION
@@ -849,6 +879,11 @@
 					plane.lineTo((ghosts[i].x - ghosts[i].radius + 12), (ghosts[i].y + ghosts[i].radius + 2));
 					plane.lineTo((ghosts[i].x - ghosts[i].radius + 15), (ghosts[i].y + ghosts[i].radius - 2));
 					plane.lineTo((ghosts[i].x - ghosts[i].radius + 20), (ghosts[i].y + ghosts[i].radius + 2));
+					if(ghosts[i].ai == 'frightened'){
+						plane.fillStyle = 'blue';
+					}else{
+						plane.fillStyle = ghosts[i].colour;
+					}
 				break;
 				case 1:
 					plane.lineTo((ghosts[i].x - ghosts[i].radius), (ghosts[i].y + ghosts[i].radius));
@@ -858,12 +893,16 @@
 					plane.lineTo((ghosts[i].x - ghosts[i].radius + 12), (ghosts[i].y + ghosts[i].radius - 2));
 					plane.lineTo((ghosts[i].x - ghosts[i].radius + 15), (ghosts[i].y + ghosts[i].radius + 2));
 					plane.lineTo((ghosts[i].x - ghosts[i].radius + 20), (ghosts[i].y + ghosts[i].radius - 2));
+					if(ghosts[i].ai == 'frightened'){
+						if(energiserState == 'runningOut'){
+							plane.fillStyle = 'black';
+						}else{
+							plane.fillStyle = 'blue';
+						}
+					}else{
+						plane.fillStyle = ghosts[i].colour;
+					}
 				break;
-			}
-			if(ghosts[i].ai == 'frightened'){
-				plane.fillStyle = 'blue';
-			}else{
-				plane.fillStyle = ghosts[i].colour;
 			}
 			//DONT DRAW GHOST BODIES WHEN THEYVE BEEN EATEN
 			if(ghosts[i].state != 'eaten'){
@@ -993,16 +1032,24 @@
 				//CHECK PAC-MAN
 				if(ghosts[i].intersects(pacman.bounds)){
 					if(pacman.energised){
-						//EAT GHOST
-						ghosts[i].state = 'eaten';
-						ghosts[i].ai = 'goHome';
+						if(ghosts[i].state != 'eaten'){
+							//EAT GHOST
+							ghosts[i].state = 'eaten';
+							ghosts[i].ai = 'goHome';
+							//ADD SCORE
+							updateScore(200 * eatenCombo);
+							//INCREMENT EATEN COMBO
+							eatenCombo++;
+						}
 					}else if(ghosts[i].state == 'eaten'){
 						//DO NOTHING
 						
 					}else{
-						//DIE
-						handleDeath();
-						return;
+						if(killable){
+							//DIE
+							handleDeath();
+							return;
+						}
 					}
 				}
 				//RESET BOUNDS
@@ -1307,7 +1354,7 @@
 	//THIS FUNCTION ALLOWS FOR THE CREATION OF GHOSTS TO BE STAGGERED AFTER THE LEVEL STARTS, MAKING SURE THE PLAYER ISNT SWARMED BY ALL THE GHOSTS AT ONCE
 	function spawnGhosts()
 	{
-		console.log('spawn ghosts called');
+		//console.log('spawn ghosts called');
 		let keepSpawning = false;
 		//CHECK NUMBER OF GHOSTS
 		switch(ghosts.length){
@@ -1454,10 +1501,13 @@
 	
 	function toggleEnergised()
 	{
+		if(showEnergisedState){
+			console.log('toggleEnergised called');
+		}
 		switch(energiserState){
 			case 'none':				
 				//TOGGLE PAC-MAN ENERGISED STATE
-				pacman.energised = !pacman.energised;
+				pacman.energised = true;
 				//SET GHOSTS AI
 				setAiMode('frightened');
 				//UPDATE ENERGISER STATE
@@ -1466,6 +1516,8 @@
 				window.setTimeout(toggleEnergised, 5000);
 			break;
 			case 'on':
+				//TOGGLE PAC-MAN ENERGISED STATE
+				pacman.energised = true;
 				//UPDATE ENERGISER STATE
 				energiserState = 'runningOut';
 				//CALL FUNCTION AGAIN
@@ -1473,16 +1525,17 @@
 			break;
 			case 'runningOut':
 				//TOGGLE PAC-MAN ENERGISED STATE
-				pacman.energised = !pacman.energised;
+				pacman.energised = false;
 				//UPDATE ENERGISER STATE
 				energiserState = 'none';
 				//SET GHOSTS AI
 				setAiMode('chase');
+				//RESET EATEN COMBO
+				eatenCombo = 1;
 			break;
 		}
 		if(showEnergisedState){
 			console.log('Energised: ' + pacman.energised + ', energiserState: ' + energiserState);
-			console.log(energiserState);
 		}
 	}
 	
@@ -1755,6 +1808,7 @@
 			newGame();
 		}else{
 			//UNPAUSE GAME
+			state = 'play';
 			setFrameRate('fast');
 		}
 	
