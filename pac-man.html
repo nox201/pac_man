@@ -228,22 +228,20 @@
 	//pac-man/ghost energiser running out phase - DONE
 	//ghost frightened AI - DONE
 	//ghost eaten AI - DONE
-	//ghost frightened phase - half done, put in the worried face
+	//ghost frightened phase - DONE
 	//ghost eaten phase - DONE
-	//score number appear on screen when a ghost is eaten
+	//score number appear on screen when a ghost is eaten - DONE
 	//in game timer - use to swap ghost ai states?
-	//levels, difficulty? (I currently can't alter the speed of the sprites or pac-man without causing issues with the collision checks. Can i reduce speed and increase frame rate?
+	//levels, difficulty? Up difficulty by lowering the amount of time the ghosts are in scatter mode, potentially increase their speed?
+	//draw the walls properly
 	
 	//NICE-TO-HAVES:
-	//styling, more flashy score display, flashing lights, bells and whistles
+	//styling, more flashy score display, flashing lights, bells and whistles.
 	//have a picture of a joystick like you'd get on a real arcade cabinet, place it underneath the lives counter and everytime the user presses a direction, update the picture so its like the user is pushing the joystick.
 	//nemisis system - at the end of the game, tell the player which ghost killed them the most, and how their AI works.
 	
 	//BUGS 
 	//ghosts can get stuck in the ghost house door when eating energisers and other situations
-	//I cant change the speed of anything due to how I've made the maze - if its too fast nothing realizes it can turn a corner because there aren't enough pixels in the gap so the ghost travels past it. Can i change speed to 1 for everything but up the frame rate? And will this work given pac-man should be slightly faster than the ghosts? What I want is the ghosts to travel really fast when they've been eaten. 
-	//this doesn't work - it runs fine at higher refresh rates but pac-man gets stuck in walls. 
-	//AH - DO I DISCONNECT THE SPEED FROM HOW FAR AHEAD THE BOUNDS LOOKS??? GHOSTS AT 4, PAC-MAN AT 5, BUT THEY CAN MOVE 1/2/3 ETC?
 	
 	//SET DIRECTION CONSTANTS
 	const UP = 0;
@@ -354,7 +352,7 @@
 		bounds: {x: 30, y: 30, w: 2, h: 2},
 		energised: false,
 		phase: 0,
-		speed: 5,
+		speed: 3,
 		facing: direction,
 		updatePosition: function(x, y){
 			this.x = x;
@@ -403,32 +401,40 @@
 		setBounds: function(boundsDirection){
 			switch(boundsDirection){
 				case UP:
-					this.bounds.y = this.bounds.y - this.speed;
+					//this.bounds.y = this.bounds.y - this.speed;
+					this.bounds.y = this.bounds.y - 5;
 				break;
 				case RIGHT:
-					this.bounds.w = this.bounds.w + this.speed;
+					//this.bounds.w = this.bounds.w + this.speed;
+					this.bounds.w = this.bounds.w + 5;
 				break;
 				case DOWN:
-					this.bounds.h = this.bounds.h + this.speed;
+					//this.bounds.h = this.bounds.h + this.speed;
+					this.bounds.h = this.bounds.h + 5;
 				break;
 				case LEFT:
-					this.bounds.x = this.bounds.x - this.speed;
+					//this.bounds.x = this.bounds.x - this.speed;
+					this.bounds.x = this.bounds.x - 5;
 				break;
 			}
 		},
 		resetBounds: function(boundsDirection){
 			switch(boundsDirection){
 				case UP:
-					this.bounds.y = this.bounds.y + this.speed;
+					//this.bounds.y = this.bounds.y + this.speed;
+					this.bounds.y = this.bounds.y + 5;
 				break;
 				case RIGHT:
-					this.bounds.w = this.bounds.w - this.speed;
+					//this.bounds.w = this.bounds.w - this.speed;
+					this.bounds.w = this.bounds.w - 5;
 				break;
 				case DOWN:
-					this.bounds.h = this.bounds.h - this.speed;
+					//this.bounds.h = this.bounds.h - this.speed;
+					this.bounds.h = this.bounds.h - 5;
 				break;
 				case LEFT:
-					this.bounds.x = this.bounds.x + this.speed;
+					//this.bounds.x = this.bounds.x + this.speed;
+					this.bounds.x = this.bounds.x + 5;
 				break;
 			}
 		},
@@ -460,7 +466,7 @@
 		//BOUNDS HAVE DEFAULT VALUES WHICH WILL BE OVERWRITTEN AS SOON AS updatePosition IS CALLED
 		bounds = {x: 182, y: 221, w: 18, h: 18};
 		phase = 0;
-		speed = 4;
+		speed = 2;
 		state = 'normal';
 		ai = 'chaser';
 		facing = RIGHT;
@@ -479,25 +485,25 @@
 		setBounds = function(boundsDirection){
 			switch(boundsDirection){
 				case UP:
-					this.bounds.y = this.bounds.y - this.speed;
+					this.bounds.y = this.bounds.y - 4;
 				break;
 				case RIGHT:
 					//CHECK FOR WRAP-AROUND POSITION
 					if(this.x > canvas.width){
-						this.x = 0 + (speed - 1);
+						this.x = 0 + (4 - 1);
 					}else{
-						this.bounds.w = this.bounds.w + this.speed;
+						this.bounds.w = this.bounds.w + 4;
 					}
 				break;
 				case DOWN:
-					this.bounds.h = this.bounds.h + this.speed;
+					this.bounds.h = this.bounds.h + 4;
 				break;
 				case LEFT:
 					//CHECK FOR WRAP-AROUND POSITION
 					if(this.x < 0){
-						this.x = canvas.width - speed;
+						this.x = canvas.width - 4;
 					}else{
-						this.bounds.x = this.bounds.x - this.speed;
+						this.bounds.x = this.bounds.x - 4;
 					}
 				break;
 			}
@@ -505,16 +511,16 @@
 		resetBounds = function(boundsDirection){
 			switch(boundsDirection){
 				case UP:
-					this.bounds.y = this.bounds.y + this.speed;
+					this.bounds.y = this.bounds.y + 4;
 				break;
 				case RIGHT:
-					this.bounds.w = this.bounds.w - this.speed;
+					this.bounds.w = this.bounds.w - 4;
 				break;
 				case DOWN:
-					this.bounds.h = this.bounds.h - this.speed;
+					this.bounds.h = this.bounds.h - 4;
 				break;
 				case LEFT:
-					this.bounds.x = this.bounds.x + this.speed;
+					this.bounds.x = this.bounds.x + 4;
 				break;
 			}
 		};
@@ -669,14 +675,19 @@
 	
 	function drawPacman(){
 		//DRAW PAC-MAN
+		//This method has 8 rather than 4 phases because it originally had 4 but i doubled the frame rate to allow variable speeds for pac-man and the ghosts.
+		//This led to the animations playing twice as fast as i originally intended and looked off, so this is a hacky way of slowing the animation while keeping the frame rate fast.
 		plane.beginPath();
 		switch(pacman.phase){
 			case 0:
+			case 7:
 				//DIRECTION PAC-MAN IS FACING IS IRRELVANT AS ITS A CIRCLE
 				plane.arc(pacman.x, pacman.y, pacman.radius, 0, 6.3);
 			break;
 			case 1:
-			case 3:
+			case 2:
+			case 5:
+			case 6:
 				switch(pacman.facing){
 					case UP:
 						plane.arc(pacman.x, pacman.y, pacman.radius, 5.5, 3.9);
@@ -692,7 +703,8 @@
 					break;
 				}
 			break;
-			case 2:
+			case 3:
+			case 4:
 				switch(pacman.facing){
 					case UP:
 						plane.arc(pacman.x, pacman.y, pacman.radius, 5.8, 3.6);
@@ -715,15 +727,19 @@
 				case 'on':
 					switch(pacman.phase){
 						case 0:
+						case 1:
 							pacmanColour = '#09ff00';
 						break;
-						case 1:
+						case 2:
+						case 3:
 							pacmanColour = '#00ffe1';
 						break;
-						case 2:
+						case 4:
+						case 5:
 							pacmanColour = '#0080ff';
 						break;
-						case 3:
+						case 6:
+						case 7:
 							pacmanColour = '#9d00ff';
 						break;
 					}
@@ -731,15 +747,19 @@
 				case 'runningOut':
 					switch(pacman.phase){
 						case 0:
+						case 1:
 							pacmanColour = '#fa4b62';
 						break;
-						case 1:
+						case 2:
+						case 3:
 							pacmanColour = '#ff4a89';
 						break;
-						case 2:
+						case 4:
+						case 5:
 							pacmanColour = '#ff4acf';
 						break;
-						case 3:
+						case 6:
+						case 7:
 							pacmanColour = '#ffa640';
 						break;
 					}
@@ -752,7 +772,7 @@
 		plane.fill();
 		
 		//UPDATE PAC-MANS PHASE ('ANIMATION')
-		if(pacman.phase == 3){
+		if(pacman.phase == 7){
 			pacman.phase = 0;
 		}else{
 			pacman.phase = pacman.phase + 1;
@@ -872,6 +892,7 @@
 			//plane.lineTo((ghosts[i].x - ghosts[i].radius), (ghosts[i].y + ghosts[i].radius + 2));
 			switch(ghosts[i].phase){
 				case 0:
+				case 1:
 					plane.lineTo((ghosts[i].x - ghosts[i].radius), (ghosts[i].y + ghosts[i].radius + 2));
 					plane.lineTo((ghosts[i].x - ghosts[i].radius + 4), (ghosts[i].y + ghosts[i].radius - 2));
 					plane.lineTo((ghosts[i].x - ghosts[i].radius + 7), (ghosts[i].y + ghosts[i].radius + 2));
@@ -885,7 +906,8 @@
 						plane.fillStyle = ghosts[i].colour;
 					}
 				break;
-				case 1:
+				case 2:
+				case 3:
 					plane.lineTo((ghosts[i].x - ghosts[i].radius), (ghosts[i].y + ghosts[i].radius));
 					plane.lineTo((ghosts[i].x - ghosts[i].radius + 4), (ghosts[i].y + ghosts[i].radius + 2));
 					plane.lineTo((ghosts[i].x - ghosts[i].radius + 7), (ghosts[i].y + ghosts[i].radius - 2));
@@ -910,7 +932,7 @@
 			}
 			
 			//UPDATE GHOSTS PHASE ('ANIMATION')
-			if(ghosts[i].phase == 1){
+			if(ghosts[i].phase == 3){
 				ghosts[i].phase = 0;
 			}else{
 				ghosts[i].phase = ghosts[i].phase + 1;
@@ -1033,13 +1055,28 @@
 				if(ghosts[i].intersects(pacman.bounds)){
 					if(pacman.energised){
 						if(ghosts[i].state != 'eaten'){
+							//PAUSE GAME FOR HALF A SECOND
+							setFrameRate('pause');							
+							window.setTimeout(function(){
+								setFrameRate('fast'); 
+							}, 500);
+							//DISPLAY EATEN COMBO
+							plane.font = '30px Verdana';
+							gradient = plane.createLinearGradient(ghosts[i].x - 20, ghosts[i].y, ghosts[i].x + 20, ghosts[i].y);
+							gradient.addColorStop("0", "red");
+							gradient.addColorStop("0.5", "yellow");
+							gradient.addColorStop("1.0", "orange");
+							plane.fillStyle = gradient;
+							plane.fillText(200 * eatenCombo, ghosts[i].x - 20, ghosts[i].y + 20);
 							//EAT GHOST
 							ghosts[i].state = 'eaten';
 							ghosts[i].ai = 'goHome';
+							ghosts[i].speed = 4;
 							//ADD SCORE
 							updateScore(200 * eatenCombo);
 							//INCREMENT EATEN COMBO
 							eatenCombo++;
+
 						}
 					}else if(ghosts[i].state == 'eaten'){
 						//DO NOTHING
@@ -1197,6 +1234,7 @@
 				if(ghosts[i].x >= 223 && ghosts[i].x <= 273 && ghosts[i].y >= 270 && ghosts[i].y <= 276){
 					ghosts[i].state = 'normal';
 					ghosts[i].ai = 'atHome';
+					ghosts[i].speed = 2;
 				}
 			}
 			if(ghosts[i].ai == 'atHome'){
@@ -1359,19 +1397,19 @@
 		//CHECK NUMBER OF GHOSTS
 		switch(ghosts.length){
 			case 0:
-				ghosts.push(new Sprite('blinky', '#FF0000', 273, 273, 10, 4, 'atHome', RIGHT, 0));
+				ghosts.push(new Sprite('blinky', '#FF0000', 273, 273, 10, 2, 'atHome', RIGHT, 0));
 				keepSpawning = true;
 			break;
 			case 1:
-				ghosts.push(new Sprite('pinky', '#fc9ff9', 223, 273, 10, 4, 'atHome', LEFT, 1));
+				ghosts.push(new Sprite('pinky', '#fc9ff9', 223, 273, 10, 2, 'atHome', LEFT, 1));
 				keepSpawning = true;
 			break;
 			case 2:
-				ghosts.push(new Sprite('inky', '#00fff2', 248, 273, 10, 4, 'atHome', LEFT, 0));
+				ghosts.push(new Sprite('inky', '#00fff2', 248, 273, 10, 2, 'atHome', LEFT, 0));
 				keepSpawning = true;
 			break;
 			case 3:
-				ghosts.push(new Sprite('clyde', '#fcba03', 248, 273, 10, 4, 'atHome', LEFT, 1));
+				ghosts.push(new Sprite('clyde', '#fcba03', 248, 273, 10, 2, 'atHome', LEFT, 1));
 				keepSpawning = false;
 			break;
 			case 4:
@@ -1455,8 +1493,7 @@
 			plane.lineTo(pacman.x, pacman.y);
 			plane.fillStyle = '#FFFF00';
 			plane.fill();
-		}else{
-			//to-do - finish this starburst effect
+		}else if(deathPhase == 6){
 			plane.fillStyle = '#FFFF00';
 			plane.beginPath();
 			plane.moveTo(pacman.x, pacman.y);
@@ -1483,10 +1520,39 @@
 			plane.moveTo(pacman.x, pacman.y);
 			plane.lineTo(pacman.x + 5, pacman.y + 5);
 			plane.stroke();
+		}else if(deathPhase == 7){
+			plane.fillStyle = '#FFFF00';
+			plane.beginPath();
+			plane.moveTo(pacman.x -5, pacman.y - 5);
+			plane.lineTo(pacman.x -10, pacman.y - 10);
+			plane.stroke();
+			plane.moveTo(pacman.x -5, pacman.y);
+			plane.lineTo(pacman.x -10, pacman.y);
+			plane.stroke();
+			plane.moveTo(pacman.x -5, pacman.y + 5);
+			plane.lineTo(pacman.x -10, pacman.y + 10);
+			plane.stroke();
+			plane.moveTo(pacman.x, pacman.y + 5);
+			plane.lineTo(pacman.x, pacman.y + 10);
+			plane.stroke();
+			plane.moveTo(pacman.x, pacman.y - 5);
+			plane.lineTo(pacman.x, pacman.y - 10);
+			plane.stroke();
+			plane.moveTo(pacman.x + 5, pacman.y - 5);
+			plane.lineTo(pacman.x + 10, pacman.y - 10);
+			plane.stroke();
+			plane.moveTo(pacman.x + 5, pacman.y);
+			plane.lineTo(pacman.x + 10, pacman.y);
+			plane.stroke();
+			plane.moveTo(pacman.x + 5, pacman.y + 5);
+			plane.lineTo(pacman.x + 10, pacman.y + 10);
+			plane.stroke();
+		}else{
+		
 		}
 		
 		//RESET DEATH ANIMATION COUNTER
-		if(deathPhase == 7){
+		if(deathPhase == 8){
 			deathPhase = 0;
 		}else{
 			//INCREMENT PHASE
@@ -1783,7 +1849,7 @@
 				repeater = setInterval(draw, 100);
 			break;
 			case 'fast':
-				repeater = setInterval(draw, 60);
+				repeater = setInterval(draw, 30);
 			break;
 			case 'destroy':
 				repeater = setInterval(draw, 25);
