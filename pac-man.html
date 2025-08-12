@@ -55,6 +55,11 @@
 			#gameOverText {
 				font-size: 20px;
 			}
+			#levelCompleteText {
+				background: -webkit-linear-gradient(90deg, #FDBB2D 0%, #22C1C3 100%);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+			}
 			#gameArea {
 				width: 34%;
 				background: linear-gradient(-45deg, #ee7752, #f8ed4e, #23a6d5, #23d5ab);
@@ -156,6 +161,9 @@
 					<div id="gameOverSplash" class="splash">
 						<p id="gameOverText"></p>
 					</div>
+					<div id="levelCompleteSplash" class="splash">
+						<p id="levelCompleteText">LEVEL COMPLETE!</p>
+					</div>
 				</td>
 				<td class="info">
 					<div class="infoBorder">
@@ -232,7 +240,7 @@
 	//ghost eaten phase - DONE
 	//score number appear on screen when a ghost is eaten - DONE
 	//in game timer - use to swap ghost ai states?
-	//levels, difficulty? Up difficulty by lowering the amount of time the ghosts are in scatter mode, potentially increase their speed?
+	//levels, difficulty? Up difficulty by lowering the amount of time the ghosts are in scatter mode
 	//draw the walls properly
 	
 	//NICE-TO-HAVES:
@@ -242,6 +250,8 @@
 	
 	//BUGS 
 	//ghosts can get stuck in the ghost house door when eating energisers and other situations
+	//the ghost door traps ghosts on level start - think ive fixed this by making the door 1px smaller but this feels wobbly
+	//the slower ghost movement when traversing the tunnel seems inconsistant, they also move slower in the ghost house?
 	
 	//SET DIRECTION CONSTANTS
 	const UP = 0;
@@ -252,15 +262,15 @@
 	
 	//DEBUG OPTIONS
 	var showDrawLoops = false;
-	var drawBounds = false;
+	var drawBounds = true;
 	var showCoords = false;
-	var showPacmanPosition = false;
+	var showPacmanPosition = true;
 	var showSpritePosition = false;
 	var showGhostPositions = false;
 	var showGhostAllowedDirections = false;
-	var showGhostsTargetCoords = false;
+	var showGhostsTargetCoords = true;
 	var showKeyInputs = false;
-	var showEnergisedState = true;
+	var showEnergisedState = false;
 	
 	//CANVAS
 	let canvas = document.getElementById('game');
@@ -277,6 +287,7 @@
 	var deathPhase = 0;
 	var killable = true;
 	var lives = 3;
+	var level = 1;
 	var easterEgg = '';
 	var energiserState = 'none';
 	var cookies = [];
@@ -342,7 +353,8 @@
 	walls.push({x:286,y:494,w:156,h:26});
 	walls.push({x:26,y:546,w:468,h:26});
 	//GHOST HOUSE 'DOOR'
-	walls.push({x:234,y:234,w:26,h:26});
+	//walls.push({x:234,y:234,w:26,h:26});
+	walls.push({x:234,y:235,w:26,h:25});
 	
 	var pacman = {
 		x: 248,
@@ -465,6 +477,7 @@
 		radius = 10;
 		//BOUNDS HAVE DEFAULT VALUES WHICH WILL BE OVERWRITTEN AS SOON AS updatePosition IS CALLED
 		bounds = {x: 182, y: 221, w: 18, h: 18};
+		boundsLookAhead = 1;
 		phase = 0;
 		speed = 2;
 		state = 'normal';
@@ -474,10 +487,14 @@
 			this.x = x;
 			this.y = y;
 			//add + 1 to the w and h properties prevents a sprite spinning in the corridors, as its exactly the right size for my 26 pixel wide corridors
-			this.bounds.x = x - this.radius;
-			this.bounds.y = y - this.radius;
-			this.bounds.w = this.radius * 2 + 1;
-			this.bounds.h = this.radius * 2 + 1;
+			/*this.bounds.x = x - this.radius - 1;
+			this.bounds.y = y - this.radius - 1;
+			this.bounds.w = this.radius * 2 + 2;
+			this.bounds.h = this.radius * 2 + 2;*/
+			this.bounds.x = x - 12;
+			this.bounds.y = y - 12;
+			this.bounds.w = 24;
+			this.bounds.h = 24;
 		};
 		intersects = function(rect){
 			return !( rect.x > (this.bounds.x + this.bounds.w) || (rect.x + rect.w) < this.bounds.x || rect.y > (this.bounds.y + this.bounds.h) || (rect.y + rect.h) < this.bounds.y);
@@ -485,25 +502,25 @@
 		setBounds = function(boundsDirection){
 			switch(boundsDirection){
 				case UP:
-					this.bounds.y = this.bounds.y - 4;
+					this.bounds.y = this.bounds.y - this.boundsLookAhead;
 				break;
 				case RIGHT:
 					//CHECK FOR WRAP-AROUND POSITION
 					if(this.x > canvas.width){
 						this.x = 0 + (4 - 1);
 					}else{
-						this.bounds.w = this.bounds.w + 4;
+						this.bounds.w = this.bounds.w + this.boundsLookAhead;
 					}
 				break;
 				case DOWN:
-					this.bounds.h = this.bounds.h + 4;
+					this.bounds.h = this.bounds.h + this.boundsLookAhead;
 				break;
 				case LEFT:
 					//CHECK FOR WRAP-AROUND POSITION
 					if(this.x < 0){
-						this.x = canvas.width - 4;
+						this.x = canvas.width - this.boundsLookAhead;
 					}else{
-						this.bounds.x = this.bounds.x - 4;
+						this.bounds.x = this.bounds.x - this.boundsLookAhead;
 					}
 				break;
 			}
@@ -511,16 +528,16 @@
 		resetBounds = function(boundsDirection){
 			switch(boundsDirection){
 				case UP:
-					this.bounds.y = this.bounds.y + 4;
+					this.bounds.y = this.bounds.y + this.boundsLookAhead;
 				break;
 				case RIGHT:
-					this.bounds.w = this.bounds.w - 4;
+					this.bounds.w = this.bounds.w - this.boundsLookAhead;
 				break;
 				case DOWN:
-					this.bounds.h = this.bounds.h - 4;
+					this.bounds.h = this.bounds.h - this.boundsLookAhead;
 				break;
 				case LEFT:
-					this.bounds.x = this.bounds.x + 4;
+					this.bounds.x = this.bounds.x + this.boundsLookAhead;
 				break;
 			}
 		};
@@ -588,7 +605,7 @@
 				setFrameRate('pause');
 			break;
 			case 'Enter':
-				startGame();
+				startGame(level);
 			break;
 		}
 		//console.log('current direction is ' + direction);
@@ -639,6 +656,11 @@
 		moveGhosts();
 		//DRAW GHOSTS
 		drawGhosts();
+		
+		//CHECK FOR LEVEL COMPLETE
+		if(cookies.length == 0){
+			handleNextLevel();
+		}
 	
 	}
 	
@@ -1071,7 +1093,8 @@
 							//EAT GHOST
 							ghosts[i].state = 'eaten';
 							ghosts[i].ai = 'goHome';
-							ghosts[i].speed = 4;
+							//I want this to increase, but it breaks the pathing due to the ghosts moving too fast so theyre not in the right position at corner
+							ghosts[i].speed = 2;
 							//ADD SCORE
 							updateScore(200 * eatenCombo);
 							//INCREMENT EATEN COMBO
@@ -1371,19 +1394,21 @@
 	{
 		for(g = 0; g < ghosts.length; g++){
 			if(option == ghosts[g].name || option == 'all'){
-				switch(ghosts[g].facing){
-					case UP:
-						ghosts[g].facing = DOWN;
-					break;
-					case RIGHT:
-						ghosts[g].facing = LEFT;
-					break;
-					case DOWN:
-						ghosts[g].facing = UP;
-					break;
-					case LEFT:
-						ghosts[g].facing = RIGHT;
-					break;
+				if(ghosts[g].ai != 'goHome'){
+					switch(ghosts[g].facing){
+						case UP:
+							ghosts[g].facing = DOWN;
+						break;
+						case RIGHT:
+							ghosts[g].facing = LEFT;
+						break;
+						case DOWN:
+							ghosts[g].facing = UP;
+						break;
+						case LEFT:
+							ghosts[g].facing = RIGHT;
+						break;
+					}
 				}
 			}
 		}
@@ -1607,8 +1632,7 @@
 	
 	function setAiMode(mode)
 	{
-		//GHOSTS TURN AROUND - will this happen on every AI switch? maybe not when switching to eaten mode? 
-		//but then can just move this call into the switch block
+		//GHOSTS TURN AROUND
 		turnGhostsAround('all');
 		
 		for(i = 0; i < ghosts.length; i++){
@@ -1903,9 +1927,11 @@
 		updateScore(-score);
 		
 		//RESET LEVEL
+		level = 1;
+		updateLevelCounter(level);
 		
 		//START GAME
-		startGame(0);
+		startGame(1);
 	}
 	
 	function startGame(level)
@@ -1915,6 +1941,9 @@
 	
 		//STOP THE GAME
 		setFrameRate('pause');
+		
+		//HIDE THE LEVEL COMPLETE SPLASH
+		document.getElementById('levelCompleteSplash').style.display = 'none';
 
 		//RESET PAC-MANS POSITION
 		pacman.reset();
@@ -1931,6 +1960,8 @@
 		//RESET DIRECTION
 		direction = RIGHT;
 		
+		//SHOW LEVEL
+		updateLevelCounter(level);
 		//SHOW READY SET GO
 		updateGetReadySplash();
 
@@ -1961,6 +1992,28 @@
 		document.getElementById('gameOverText').innerHTML = 'You died! You reached level X, scored ' + score + ' points and were playing for X seconds.';
 	}
 	
+	function handleNextLevel()
+	{
+		state = 'paused';
+		setFrameRate('pause');
+		
+		//INCREMENT LEVEL
+		level++;
+		updateLevelCounter(level);
+		
+		//RESET EVERYTHING
+		resetCookies();
+		resetEnergisers();
+		
+		//DISPLAY 'LEVEL COMPLETE'
+		document.getElementById('levelCompleteSplash').style.display = 'block';
+		
+		//WAIT FOR 3 SECONDS, START NEW LEVEL
+		window.setTimeout(function(){
+			startGame(level)
+		}, 3000);
+	}
+	
 	//--
 	
 	//EASTER EGG FUNCTION
@@ -1986,7 +2039,7 @@
 		document.getElementById('scoreCounter').innerHTML = score;
 	}
 	
-	//CREATES A SPLASH SCREEN THAT DISPLAYS GAME OVER
+	//UPDATES THE LIVES COUNTER
 	function updateLivesCounter(lives)
 	{
 		livesString = '';
@@ -1994,6 +2047,12 @@
 			livesString += '&#10084;';
 		}
 		document.getElementById('livesCounter').innerHTML = livesString;
+	}
+	
+	//UPDATES THE LEVEL COUNTER
+	function updateLevelCounter(level)
+	{
+		document.getElementById('levelCounter').innerHTML = level;
 	}
 	
 	//CREATES A SPLASH SCREEN THAT DISPLAYS 'READY, SET, GO' OVER TIME, THEN HIDES THE DIV
