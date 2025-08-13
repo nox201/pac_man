@@ -31,7 +31,7 @@
 				display: none;
 				position: fixed;
 				margin-top: -400px;
-				margin-left: 58px;
+				margin-left: 5%;
 				width: 24%;
 				color: white;
 				background-color: black;
@@ -56,6 +56,11 @@
 				font-size: 20px;
 			}
 			#levelCompleteText {
+				background: -webkit-linear-gradient(90deg, #FDBB2D 0%, #22C1C3 100%);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+			}
+			.splashText {
 				background: -webkit-linear-gradient(90deg, #FDBB2D 0%, #22C1C3 100%);
 				-webkit-background-clip: text;
 				-webkit-text-fill-color: transparent;
@@ -154,6 +159,7 @@
 				<td id="gameArea">
 					<canvas id="game" width="494" height="572"></canvas>
 					<div id="getReadySplash" class="splash">
+						<p class="splashText">LEVEL START!</p>
 						<p id="ready">READY</p>
 						<p id="set">SET</p>
 						<p id="go">GO!</p>
@@ -162,7 +168,7 @@
 						<p id="gameOverText"></p>
 					</div>
 					<div id="levelCompleteSplash" class="splash">
-						<p id="levelCompleteText">LEVEL COMPLETE!</p>
+						<p id="levelCompleteText" class="splashText">LEVEL COMPLETE!</p>
 					</div>
 				</td>
 				<td class="info">
@@ -186,7 +192,7 @@
 		</table>
 	</div>
 	<div id="controls">
-		<button onclick="startGame()">Start</button>
+		<button onclick="startGame(1)">Start</button>
 		<button onclick="setFrameRate('pause')">Pause</button>
 		<button onclick="setFrameRate('fast')">Unpause</button>
 		<button onclick="draw()">Single Frame</button>
@@ -239,8 +245,8 @@
 	//ghost frightened phase - DONE
 	//ghost eaten phase - DONE
 	//score number appear on screen when a ghost is eaten - DONE
-	//in game timer - use to swap ghost ai states?
-	//levels, difficulty? Up difficulty by lowering the amount of time the ghosts are in scatter mode
+	//in game timer - use to swap ghost ai states? - DONE
+	//levels, difficulty? Up difficulty by lowering the amount of time the ghosts are in scatter mode, how long energised lasts - DONE
 	//draw the walls properly
 	
 	//NICE-TO-HAVES:
@@ -262,13 +268,13 @@
 	
 	//DEBUG OPTIONS
 	var showDrawLoops = false;
-	var drawBounds = true;
+	var drawBounds = false;
 	var showCoords = false;
-	var showPacmanPosition = true;
+	var showPacmanPosition = false;
 	var showSpritePosition = false;
 	var showGhostPositions = false;
 	var showGhostAllowedDirections = false;
-	var showGhostsTargetCoords = true;
+	var showGhostsTargetCoords = false;
 	var showKeyInputs = false;
 	var showEnergisedState = false;
 	
@@ -294,6 +300,27 @@
 	var energisers = [];
 	var ghosts = []
 	var eatenCombo = 1;
+	var levelTimer;
+	var levelTimer2;
+	var levelTimer3;
+	var levelTimer4;
+	
+	var levelTimers = [];
+	//VALUES ARE SECONDS ELAPSED BETWEEN THE START OF THE LEVEL AND SWAPPING TO SCATTER, THEN BACK TO CHASE, TWICE
+	//AFTER LEVEL 6 THE GHOSTS JUST STAY IN CHASE MODE ALL THE TIME
+	levelTimers[1] = [15000, 30000, 60000, 90000];
+	levelTimers[2] = [30000, 45000, 60000, 90000];
+	levelTimers[3] = [45000, 60000, 75000, 90000];
+	levelTimers[4] = [45000, 50000, 90000, 100000];
+	levelTimers[5] = [60000, 75000, 100000,110000];
+	
+	var energiserTime = []
+	//VALUES DETERMINE HOW LONG PAC-MAN IS ENERGISED FOR, IN BOTH NORMAL AND 'RUNNING OUT' STATES
+	energiserTime[1] = [8000, 5000];
+	energiserTime[2] = [7000, 5000];
+	energiserTime[3] = [6000, 4000];
+	energiserTime[4] = [5500, 3500];
+	energiserTime[5] = [5000, 3000];
 	
 	var walls = [];
 	walls.push({x:0,y:0,w:494,h:26});
@@ -697,7 +724,7 @@
 	
 	function drawPacman(){
 		//DRAW PAC-MAN
-		//This method has 8 rather than 4 phases because it originally had 4 but i doubled the frame rate to allow variable speeds for pac-man and the ghosts.
+		//This method has 8 rather than 4 phases because it originally had 4 but i doubled the frame rate to allow variable speeds for pac-man and the ghosts (which didn't work in the end, but the faster frame rate looks smoother).
 		//This led to the animations playing twice as fast as i originally intended and looked off, so this is a hacky way of slowing the animation while keeping the frame rate fast.
 		plane.beginPath();
 		switch(pacman.phase){
@@ -1394,7 +1421,7 @@
 	{
 		for(g = 0; g < ghosts.length; g++){
 			if(option == ghosts[g].name || option == 'all'){
-				if(ghosts[g].ai != 'goHome'){
+				if(ghosts[g].ai != 'goHome' && ghosts[g].ai != 'atHome'){
 					switch(ghosts[g].facing){
 						case UP:
 							ghosts[g].facing = DOWN;
@@ -1470,7 +1497,9 @@
 		}
 		
 		//RESET GAME
-		setTimeout(startGame, 2500);
+		setTimeout(function(){
+			startGame(level)
+		}, 2500);
 	}
 	
 	function playDeathAnimation()
@@ -1595,6 +1624,17 @@
 		if(showEnergisedState){
 			console.log('toggleEnergised called');
 		}
+		
+		console.log('level is' + level);
+		
+		//SET HOW LONG PAC-MAN IS ENERGISED FOR BASED ON THE LEVEL
+		if(level < 6){
+			energiserDuration = energiserTime[level][0];
+			energiserRunningOutDuration = energiserTime[level][1];
+		}else{
+			energiserDuration = energiserTime[5][0];
+			energiserRunningOutDuration = energiserTime[5][1];
+		}
 		switch(energiserState){
 			case 'none':				
 				//TOGGLE PAC-MAN ENERGISED STATE
@@ -1604,7 +1644,7 @@
 				//UPDATE ENERGISER STATE
 				energiserState = 'on';
 				//CALL FUNCTION AGAIN
-				window.setTimeout(toggleEnergised, 5000);
+				energiserTimer = window.setTimeout(toggleEnergised, energiserDuration);
 			break;
 			case 'on':
 				//TOGGLE PAC-MAN ENERGISED STATE
@@ -1612,7 +1652,7 @@
 				//UPDATE ENERGISER STATE
 				energiserState = 'runningOut';
 				//CALL FUNCTION AGAIN
-				window.setTimeout(toggleEnergised, 3000);
+				energiserRunningOutTimer = window.setTimeout(toggleEnergised, energiserRunningOutDuration);
 			break;
 			case 'runningOut':
 				//TOGGLE PAC-MAN ENERGISED STATE
@@ -1638,7 +1678,7 @@
 		for(i = 0; i < ghosts.length; i++){
 			//IGNORE AI CHANGES FOR EATEN GHOSTS, THEIR AI WILL BE UPDATED WHEN THEY GET TO THE GHOST HOUSE
 			//THIS PREVENTS ISSUES WITH GHOSTS BECOMING STUCK IN EATEN OR FRIGHTENED STATES WHEN THE ENGERGISER STATE CHANGES
-			if(ghosts[i].ai != 'goHome'){
+			if(ghosts[i].ai != 'goHome' && ghosts[i].ai != 'atHome'){
 				//CHASE AI IS GHOST SPECIFIC
 				if(mode == 'chase'){
 					switch(ghosts[i].name){
@@ -1662,6 +1702,9 @@
 			}
 		}
 	}
+
+	
+	//--
 	
 	function resetEnergisers()
 	{
@@ -1885,9 +1928,7 @@
 	
 	function handleStartButtonClicked()
 	{
-		//BUTTON STUFF
-	
-	
+
 		//CHECK GAME STATE - WILL START/PAUSE 
 		if(state == 'play'){
 			//PAUSE GAME
@@ -1936,6 +1977,19 @@
 	
 	function startGame(level)
 	{
+		
+		//CLEAR POSSIBLE TIMERS
+		if(typeof energiserTimer !== 'undefined'){
+			clearTimeout(energiserTimer);
+		}
+		if(typeof energiserRunningOutTimer !== 'undefined'){
+			clearTimeout(energiserRunningOutTimer);
+		}
+		//TOGGLE PAC-MAN ENERGISED STATE
+		pacman.energised = false;
+		//UPDATE ENERGISER STATE
+		energiserState = 'none';
+		
 		//SET STATE
 		state = 'play';
 	
@@ -1966,16 +2020,31 @@
 		updateGetReadySplash();
 
 		//SET FRAME RATE AND START DRAW LOOP
-		//wait for 3 seconds for the updateGetReadySplash to finish - is there a better way of doing this?
-		//can I bind an event listener to the end of the function?
+		//wait for 3 seconds for the updateGetReadySplash to finish
 		window.setTimeout(function(){ 
 			setFrameRate('fast'); 
 		}, 3000);
 		
 		//RESET GAME TIMER
-		//this will be used to dynamically update the ghosts AI as the level progresses
-		//so the ghosts start off in atHome AI, then update as soon as they all leave the ghosthouse, closing the ghost house and changing AI to chaser
-		//then as the level progresses they will swap between scatter and chase
+		clearTimeout(levelTimer);
+		clearTimeout(levelTimer2);
+		clearTimeout(levelTimer3);
+		clearTimeout(levelTimer4);
+		if(level < 6){
+			levelTimer = window.setTimeout(function(){
+				setAiMode('scatter')
+			}, levelTimers[level][0]);
+			levelTimer2 = window.setTimeout(function(){
+				setAiMode('chase')
+			}, levelTimers[level][1]);
+			levelTimer = window.setTimeout(function(){
+				setAiMode('scatter')
+			}, levelTimers[level][2]);
+			levelTimer2 = window.setTimeout(function(){
+				setAiMode('chase')
+			}, levelTimers[level][3]);
+		}
+		
 		
 	}
 	
@@ -1989,7 +2058,7 @@
 		//DISPLAY GAME OVER DIV
 		document.getElementById('gameOverSplash').style.display = 'block';
 		//to-do finish this by putting in the right data
-		document.getElementById('gameOverText').innerHTML = 'You died! You reached level X, scored ' + score + ' points and were playing for X seconds.';
+		document.getElementById('gameOverText').innerHTML = 'You died! You reached level X and scored ' + score + ' points.';
 	}
 	
 	function handleNextLevel()
