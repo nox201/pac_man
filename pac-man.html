@@ -87,20 +87,30 @@
 				font-size: 40px;
 				margin-left: 25%;
 			}
+			@property --a{
+				syntax: '<angle>';
+				inherits: false;
+				initial-value: 90deg;
+			}
 			.infoBorder {
+				--a: 0deg;
+				transition: --a 0.5s 0.1s;
 				width: 50%;
 				margin-left: 25%;
-				background: linear-gradient(145deg, #000000, #000000, #FFFFFF, #000000);
-				background-size: 400% 400%;
-				animation: gradient 10s ease infinite;
+				background: linear-gradient(var(--a), #FFFF00 1%, #000000, #000000, #000000);
+				background-size: 100% 100%;
+				animation: spin-gradient 10s linear infinite;
 				z-index: 1000;
 				padding: 10px;
 				border-radius: 8px;
 			}
+			@keyframes spin-gradient {
+				from {--a:0deg;}
+				to {--a:360deg;}
+			}
 			.infoInterior {
 				background-color: black;
 			}
-			
 			.button {
 				padding: 35px;
 				border: 2px solid black;
@@ -1671,10 +1681,7 @@
 	}
 	
 	function setAiMode(mode)
-	{
-		//GHOSTS TURN AROUND
-		turnGhostsAround('all');
-		
+	{	
 		for(i = 0; i < ghosts.length; i++){
 			//IGNORE AI CHANGES FOR EATEN GHOSTS, THEIR AI WILL BE UPDATED WHEN THEY GET TO THE GHOST HOUSE
 			//THIS PREVENTS ISSUES WITH GHOSTS BECOMING STUCK IN EATEN OR FRIGHTENED STATES WHEN THE ENGERGISER STATE CHANGES
@@ -1699,6 +1706,8 @@
 					//SET ALL GHOSTS AI TO MODE
 					ghosts[i].ai = mode;
 				}
+				//GHOSTS TURN AROUND
+				turnGhostsAround('all');
 			}
 		}
 	}
@@ -2058,7 +2067,7 @@
 		//DISPLAY GAME OVER DIV
 		document.getElementById('gameOverSplash').style.display = 'block';
 		//to-do finish this by putting in the right data
-		document.getElementById('gameOverText').innerHTML = 'You died! You reached level X and scored ' + score + ' points.';
+		document.getElementById('gameOverText').innerHTML = 'You died! You reached level ' + level + ' and scored ' + score + ' points.';
 	}
 	
 	function handleNextLevel()
@@ -2155,13 +2164,5 @@
 			break;
 		}
 	}
-	
-	//--	
-	
-	//RUN
-	//newGame();
-	
-	//start game to save button press while developing
-	//startGame();
 	
 </script>
