@@ -257,7 +257,7 @@
 	//score number appear on screen when a ghost is eaten - DONE
 	//in game timer - use to swap ghost ai states? - DONE
 	//levels, difficulty? Up difficulty by lowering the amount of time the ghosts are in scatter mode, how long energised lasts - DONE
-	//draw the walls properly
+	//draw the walls properly - DONE
 	
 	//NICE-TO-HAVES:
 	//styling, more flashy score display, flashing lights, bells and whistles.
@@ -705,10 +705,12 @@
 	
 	function drawWalls(){
 		for(i = 0; i < walls.length; i++){
+			plane.lineWidth = 2;
 			plane.beginPath();
-			plane.rect(walls[i].x, walls[i].y, walls[i].w, walls[i].h);
-			plane.strokeStyle = '#FFF';
+			plane.roundRect(walls[i].x, walls[i].y, walls[i].w, walls[i].h, 10);
+			plane.strokeStyle = 'blue';
 			plane.stroke();
+			plane.lineWidth = 1;
 		}
 	}
 	
