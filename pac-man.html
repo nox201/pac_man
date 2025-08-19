@@ -7,8 +7,6 @@
 				background-color: black;
 				font-family: "Lucida Console", cursive;
 				font-weight: 900;
-				
-				
 			}
 			#game {
 				background-color: black;
@@ -23,6 +21,9 @@
 			}
 			#logo {
 				height: 100px;
+			}
+			#joystick {
+				margin-top: 200px;
 			}
 			.pacmanImage {
 				height: 100px;	
@@ -87,7 +88,7 @@
 				font-size: 40px;
 				margin-left: 25%;
 			}
-			@property --a{
+			@property --a {
 				syntax: '<angle>';
 				inherits: false;
 				initial-value: 90deg;
@@ -127,17 +128,28 @@
 			.button:active:hover {
 				transform: scale(0.98);
 			}
+			.signature {
+				vertical-align: bottom;
+				text-align: center;
+				font-size: 10px;
+				color: white;
+				width: 100%;
+				padding-top: 75px;
+			}
 			
+			#controls {
+				display: none;
+			}
 			.easterEgg:hover {
 				border: 2px solid blue;
-			}
-			.rotate {
-				animation: rotate 10s ease infinite;
 			}
 			@keyframes rotate {
 				0% {transform: rotate(0deg);}
 				50% {transform: rotate(360deg);}
 				100% {transform: rotate(0deg);}
+			}
+			.rotate {
+				animation: rotate 10s ease infinite;
 			}
 		</style>
 	</head>
@@ -145,7 +157,7 @@
 
 <body>
 	<div id="header">
-		<img class="pacmanImage" src="pacman.png">
+		<img class="pacmanImage easterEgg" onclick="playEasterEgg('showCheats')" src="pacman.png">
 		<img class="pacmanImage" src="pacman.png">
 		<img class="pacmanImage" src="pacman.png">
 		<img class="pacmanImage" src="pacman.png">
@@ -153,7 +165,7 @@
 		<img class="pacmanImage" src="pacman-reversed.png">
 		<img class="pacmanImage" src="pacman-reversed.png">
 		<img class="pacmanImage" src="pacman-reversed.png">
-		<img class="pacmanImage easterEgg" onclick="playEasterEgg('rotate')"src="pacman-reversed.png">
+		<img class="pacmanImage easterEgg" onclick="playEasterEgg('rotate')" src="pacman-reversed.png">
 	</div>
 	<div class="container">
 
@@ -164,6 +176,7 @@
 						<button id="startButton" class="button" onclick="handleStartButtonClicked()"></button>
 						<br/>
 						<span>START/PAUSE</span>
+						<img id="joystick" src="joystick-centre.png">
 					</div>
 				</td>
 				<td id="gameArea">
@@ -197,6 +210,11 @@
 							<span id="scoreCounter">-</span>
 						</div>
 					</div>
+					<table class="signature">
+						<tr class="signature">
+							<td class="signature"><p class="signature">An illustrative example by Lawrence Wood, 2025</p></td>
+						</tr>
+					</table>
 				</td>
 			</tr>
 		</table>
@@ -215,28 +233,10 @@
 		<button onclick="toggleKillable()">Swap Killable</button>
 		<button onclick="toggleEnergised()">Toggle Energised</button>
 	</div>
-	
-<!--	<canvas id="test" width="200" height="200"></canvas>
-	<p>Start: <input id="testX" type="text"/></p>
-	<p>End: <input id="testY" type="text"/></p>
-	<button onclick="testDraw()">Test</button>-->
-	
 </body>
 
 <script>
-	
-	//TEST CANVAS
-/*	let testCanvas = document.getElementById('test');
-	let testPlane = testCanvas.getContext("2d");
-	function testDraw(){
-		startAngle = document.getElementById('testX').value;
-		endAngle = document.getElementById('testY').value;
-		testPlane.clearRect(0,0,testCanvas.width,testCanvas.height);
-		testPlane.beginPath();
-		testPlane.arc(75,75,50,startAngle,endAngle);
-		testPlane.fillStyle = '#FFF';
-		testPlane.stroke();	
-	}*/
+
 	
 	//BIG TO-DOs
 	//inkys flank AI - DONE
@@ -261,12 +261,9 @@
 	
 	//NICE-TO-HAVES:
 	//styling, more flashy score display, flashing lights, bells and whistles.
-	//have a picture of a joystick like you'd get on a real arcade cabinet, place it underneath the lives counter and everytime the user presses a direction, update the picture so its like the user is pushing the joystick.
 	//nemisis system - at the end of the game, tell the player which ghost killed them the most, and how their AI works.
 	
 	//BUGS 
-	//ghosts can get stuck in the ghost house door when eating energisers and other situations
-	//the ghost door traps ghosts on level start - think ive fixed this by making the door 1px smaller but this feels wobbly
 	//the slower ghost movement when traversing the tunnel seems inconsistant, they also move slower in the ghost house?
 	
 	//SET DIRECTION CONSTANTS
@@ -625,18 +622,22 @@
 			case 'ArrowUp':
 				//BUFFER DIRECTION, WILL BE CHECKED IN movePacman()
 				direction = UP;
+				document.getElementById('joystick').src = "joystick-forward.png";
 			break;
 			case 'KeyD':
 			case 'ArrowRight':
 				direction = RIGHT;
+				document.getElementById('joystick').src = "joystick-right.png";
 			break;
 			case 'KeyS':
 			case 'ArrowDown':
 				direction = DOWN;
+				document.getElementById('joystick').src = "joystick-down.png";
 			break;
 			case 'KeyA':
 			case 'ArrowLeft':
 				direction = LEFT;
+				document.getElementById('joystick').src = "joystick-left.png";
 			break;
 			case 'Space':
 				setFrameRate('pause');
@@ -645,8 +646,11 @@
 				startGame(level);
 			break;
 		}
-		//console.log('current direction is ' + direction);
-		
+	}
+	
+	document.addEventListener("keyup", revertJoystick);
+	function revertJoystick() {
+		document.getElementById('joystick').src = "joystick-centre.png";
 	}
 	
 
@@ -2108,6 +2112,9 @@
 					document.getElementById('game').classList.add('rotate');
 					easterEgg = 'rotating';
 				}
+			break;
+			case 'showCheats':
+				document.getElementById('controls').style.display = 'block';
 			break;
 		}
 	}
